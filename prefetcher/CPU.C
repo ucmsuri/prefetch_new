@@ -28,7 +28,7 @@ void CPU::readNextRequest(u_int32_t cycle) {
 	//u_int32_t pc, addr, cycles_since_last;
 	u_int64_t pc, addr, cycles_since_last;
 	if(fscanf(_trace, "%c %lx %lx %u\n",&ld,&pc,&addr,&cycles_since_last) == 4) {
-	printf("%c %lx %lx %u\n",ld,pc,addr,cycles_since_last);
+//	printf("%c %lx %lx %u\n",ld,pc,addr,cycles_since_last);
 		_currReq.addr = addr;
 		if(ld == 'l') _currReq.load = true;
 		else _currReq.load = false;

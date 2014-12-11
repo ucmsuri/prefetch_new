@@ -1,257 +1,105 @@
+/*
+ *
+ * File: prefetcher.C
+ * Author: Sat Garcia (sat@cs)
+ * Description: This simple prefetcher waits until there is a D-cache miss then 
+ * requests location (addr + 16), where addr is the address that just missed 
+ * in the cache.
+ *
+ */
+
 #include "prefetcher.h"
-#include "mem-sim.h"
+#include <stdio.h>
 
-Prefetcher::Prefetcher() {
-  initLocalRequest();
-  initHistoryState();
-}
+static int counter = 0;
+static rpt_row_entry_t rpt_table[NUM_RPT_ENTRIES]; 
 
-bool Prefetcher::hasRequest(u_int32_t cycle) {
-  return (!ifEmptyLocalRequest());
-}
+Prefetcher::Prefetcher() { 
+  int i;
+  printf("PRE: creating prefetcher with value of (%d reqs per miss)\n", NUM_REQS_PER_MISS);
+  printf("PRE: NUM ENTRIES IN TABLE: %d\n", NUM_RPT_ENTRIES);
 
-Request Prefetcher::getRequest(u_int32_t cycle) {
-  Request req;
-  req.addr = getFrontLocalRequest();
-  return req;
-}
 
-void Prefetcher::completeRequest(u_int32_t cycle) {
-  deLocalRequest();
-}
-
-void Prefetcher::cpuRequest(Request req) {
-  u_int16_t index = queryHistoryState(req.pc);
-  if (index == NULL_STATE) {
-    insertHistoryState(req.pc, req.addr, 1, 0, 0);
-    enLocalRequest(req.addr + 32);
-    enLocalRequest(req.addr + 64);
+  _ready = false; 
+  /* create memory for rpt table */
+  //rpt_table = (struct rpt_row_entry *)malloc(sizeof(struct rpt_row_entry) * NUM_RPT_ENTRIES);
+  /* clear to 0's the rpt table */
+  //memset(rpt_table, 0, sizeof(struct rpt_row_entry) * NUM_RPT_ENTRIES);
+  for(i = 0; i < NUM_RPT_ENTRIES; i++){
+    rpt_table[i].pc = 0;
+    rpt_table[i].last_stride = 0;
+    rpt_table[i].last_mem = 0;
   }
-  else {
-    // Second time
-    if (historyState[index].count == 1) {
-      historyState[index].offset = (int16_t)((int64_t)req.addr) - ((int64_t)historyState[index].addr);
-      historyState[index].addr = req.addr;
-      historyState[index].count++;
-      if (req.HitL1) {
-        if (historyState[index].offset > 0) {
-          historyState[index].ahead = (L1_CACHE_BLOCK - (req.addr % L1_CACHE_BLOCK)) / historyState[index].offset;
-        }
-        else if (historyState[index].offset < 0) {
-          historyState[index].ahead = (req.addr % L1_CACHE_BLOCK) / (- historyState[index].offset);
-        }
-        else {
-          historyState[index].ahead = 0;
-        }
-      }
-      else {
-        if (historyState[index].offset > 0) {
-          historyState[index].ahead = (L2_CACHE_BLOCK - (req.addr % L2_CACHE_BLOCK)) / historyState[index].offset;
-        }
-        else if (historyState[index].offset < 0) {
-          historyState[index].ahead = (req.addr % L2_CACHE_BLOCK) / (- historyState[index].offset);
-        }
-        else {
-          historyState[index].ahead = 0;
-        }
-      }
-    }
-    else {
-      int16_t previous = historyState[index].offset;
-      historyState[index].offset = (int64_t)req.addr - (int64_t)historyState[index].addr;
-      historyState[index].addr = req.addr;
-      if (previous != historyState[index].offset) {
-        historyState[index].count = 1;
-        enLocalRequest(req.addr + 32);
-        enLocalRequest(req.addr + 64);
-      }
-      else {
-        historyState[index].count++;
-      }
-      if (historyState[index].offset != 0) {
-        historyState[index].ahead--;
-      }
-    }
 
-    // Prefetch MIN(count - 1, PREFETCH_DEGREE)
-    if (historyState[index].offset != 0) {
-      u_int16_t prefetchDegree = (req.HitL1) ? (L1_PREFETCH_DEGREE) : (L2_PREFETCH_DEGREE);
-      while (historyState[index].ahead < MIN(historyState[index].count - 1, prefetchDegree)) {
-        u_int32_t addr = (int64_t)historyState[index].addr + (int64_t)(historyState[index].offset) *
-                         ((int64_t)historyState[index].ahead + 1);
-        enLocalRequest(addr);
-        if (req.HitL1) {
-          if (historyState[index].offset > 0) {
-            historyState[index].ahead += (L1_CACHE_BLOCK - (addr % L1_CACHE_BLOCK)) / historyState[index].offset + 1;
-          }
-          else {
-            historyState[index].ahead += (addr % L1_CACHE_BLOCK) / (- historyState[index].offset) + 1;
-          }
-        }
-        else {
-          if (historyState[index].offset > 0) {
-            historyState[index].ahead += (L2_CACHE_BLOCK - (addr % L2_CACHE_BLOCK)) / historyState[index].offset + 1;
-          }
-          else {
-            historyState[index].ahead += (addr % L1_CACHE_BLOCK) / (- historyState[index].offset) + 1;
-          }
-        }
-      }
-    }
+  
+}
 
-    //Place to the most recent used head
-    if (historyState[index].next == NULL_STATE) {
-      u_int16_t prev = getSecondLRUState();
+bool Prefetcher::hasRequest(u_int32_t cycle) { return _ready; }
 
-      historyState[prev].next = NULL_STATE;
-      historyState[index].next = stateHead;
-      stateHead = index;
-    }
-    else {
-      u_int16_t next = historyState[index].next;
+Request Prefetcher::getRequest(u_int32_t cycle) { 
+  return _nextReq; }
 
-      State temp;
-      temp.pc     = historyState[index].pc;
-      temp.addr   = historyState[index].addr;
-      temp.count  = historyState[index].count;
-      temp.offset = historyState[index].offset;
-      temp.ahead  = historyState[index].ahead;
-
-      historyState[index].pc      = historyState[next].pc;
-      historyState[index].addr    = historyState[next].addr;
-      historyState[index].count   = historyState[next].count;
-      historyState[index].offset  = historyState[next].offset;
-      historyState[index].ahead   = historyState[next].ahead;
-      historyState[index].next    = historyState[next].next;
-
-      historyState[next].pc     = temp.pc;
-      historyState[next].addr   = temp.addr;
-      historyState[next].count  = temp.count;
-      historyState[next].offset = temp.offset;
-      historyState[next].ahead  = temp.ahead;
-      historyState[next].next   = stateHead;
-      stateHead = next;
+void Prefetcher::completeRequest(u_int32_t cycle) { 
+  int rpt_row_num, curr_stride;
+  rpt_row_entry_t *curr_row;
+  
+  if(_req_left == 0){
+    _ready = false; 
+  }else{
+    _req_left--;
+    /* determine if we should fetch strides or not */
+    rpt_row_num = _nextReq.pc % NUM_RPT_ENTRIES;
+    curr_row = &rpt_table[rpt_row_num];
+    if(curr_row->last_stride != 0){
+      _nextReq.addr = _nextReq.addr + curr_row->last_stride;
+      curr_row->last_mem = _nextReq.addr;
+    }else{
+      _nextReq.addr = _nextReq.addr + L2_BLOCK_SIZE;
     }
   }
+  
 }
 
-// History state table operations
-void Prefetcher::initHistoryState() {
-  stateCount = 0;
-  stateHead = NULL_STATE;
-}
+void Prefetcher::cpuRequest(Request req) { 
+        int rpt_row_num, curr_stride;
+	rpt_row_entry_t *curr_row;
+ 	if(!_ready && !req.HitL1) {
+	       /* check entry in RPT table */
+	       rpt_row_num = req.pc % NUM_RPT_ENTRIES;
+	       curr_row = &rpt_table[rpt_row_num];
+	       //printf("PRE: rpt_row_num: %d, pc\t%x and curr_pc\t%x\n", rpt_row_num, req.pc, curr_row->pc);
+	       if(curr_row->pc == req.pc){
+		 //printf("DEBUG: req pc matches for the %dth time\n", counter++);
+		if (req.addr - (curr_row->last_mem) <0)
+		{ printf("reverse stride\n");}
+		 /* this entry is in the table */
+		 if((curr_stride = req.addr - (curr_row->last_mem)) == curr_row->last_stride && curr_stride > WORTHWHILE_RPT){
+		   /* if stride is the same as this one,
+		      "punch-it" use it to prefetch */
+//		     printf("PRE: same stride found for address %x, with lastmem of %x and curr_req of %x, previous stride at %d\n",
+		//	    req.pc, curr_row->last_mem, req.addr, curr_stride);
+		   _nextReq.addr = req.addr + curr_stride;
+		   _ready = true;
+		   _req_left = NUM_REQS_PER_MISS - 1;  
+		 }else{
+		   /* update to new stride  and do standard prefetch TODO */
+		      curr_row->last_stride = curr_stride; 
+		      _nextReq.addr = req.addr + L2_BLOCK_SIZE;
+		      _ready = true;
+		      _req_left = NUM_REQS_PER_MISS - 1;  
+		      } 
+	       }else{
+		 /* no pc, so do standard prefetch*/
+		   _nextReq.addr = req.addr + L2_BLOCK_SIZE;
+		   _ready = true;
+		   _req_left = NUM_REQS_PER_MISS - 1;  
+		   /* also update stride to 0 so new entry not confused */
+		   curr_row->last_stride = 0;
+	       }
+	       /* in all cases, update row in RPT */
+	       curr_row->pc = req.pc;
+	       curr_row->last_mem = req.addr;
+	       
+	} 
 
-bool Prefetcher::ifEmptyHistoryState() {
-  return (stateCount == 0);
-}
-
-bool Prefetcher::ifFullHistoryState() {
-  return (stateCount == MAX_STATE_COUNT);
-}
-
-void Prefetcher::insertHistoryState(u_int32_t pc, u_int32_t addr, u_int16_t count, int16_t offset, u_int16_t ahead) {
-  if (!ifFullHistoryState()) {
-    // Insert state when table is not full
-    historyState[stateCount].pc     = pc;
-    historyState[stateCount].addr   = addr;
-    historyState[stateCount].count  = count;
-    historyState[stateCount].offset = offset;
-    historyState[stateCount].ahead  = ahead;
-    historyState[stateCount].next   = stateHead;
-    
-    stateHead = stateCount;
-    stateCount++;
-  }
-  else {
-    // LRU eviction in history state table
-    u_int32_t index = getSecondLRUState();
-    u_int32_t replace = historyState[index].next;
-    historyState[index].next = NULL_STATE;
-
-    historyState[replace].pc      = pc;
-    historyState[replace].addr    = addr;
-    historyState[replace].count   = count;
-    historyState[replace].offset  = offset;
-    historyState[replace].ahead   = ahead;
-    historyState[replace].next    = stateHead;
-
-    stateHead = replace;
-  }
-}
-
-u_int16_t Prefetcher::queryHistoryState(u_int32_t pc) {
-  u_int16_t i;
-  for (i = stateHead; i != NULL_STATE; i = historyState[i].next ) {
-    if (historyState[i].pc == pc) {
-      return i;
-    }
-  }
-  return NULL_STATE;
-}
-
-u_int16_t Prefetcher::getSecondLRUState() {
-  u_int16_t i;
-  for (i = 0; i < MAX_STATE_COUNT; i++) {
-    if (historyState[i].next == NULL_STATE) {
-      continue;
-    }
-    else if (historyState[historyState[i].next].next == NULL_STATE) {
-      return i;
-    }
-  }
-  printf("Error -- from Prefetcher::getSecondLRUState()");
-}
-
-// Local request queue operations
-void Prefetcher::initLocalRequest() {
-  frontRequest = rearRequest = 0;
-}
-
-bool Prefetcher::ifEmptyLocalRequest() {
-  return (frontRequest == rearRequest);
-}
-
-bool Prefetcher::ifFullLocalRequest() {
-  return (frontRequest == (rearRequest + 1) % MAX_REQUEST_COUNT);
-}
-
-bool Prefetcher::enLocalRequest(u_int32_t addr) {
-  if (ifAlreadyInQueue(addr)) {
-    //printf("full\n");
-    return false;
-  }
-
-  if (ifFullLocalRequest()) {
-    return false;
-  }
-  else {
-    localRequest[rearRequest] = addr;
-    rearRequest = (rearRequest + 1) % MAX_REQUEST_COUNT;
-    return true;
-  }
-}
-
-u_int32_t Prefetcher::deLocalRequest() {
-  if (ifEmptyLocalRequest()) {
-    return 0;
-  }
-  else {
-    u_int32_t addr = localRequest[frontRequest];
-    frontRequest = (frontRequest + 1) % MAX_REQUEST_COUNT;
-    return addr;
-  }
-}
-
-u_int32_t Prefetcher::getFrontLocalRequest() {
-  return localRequest[frontRequest];
-}
-
-bool Prefetcher::ifAlreadyInQueue(u_int32_t addr) {
-  u_int32_t i;
-  for (i = frontRequest; i % MAX_REQUEST_COUNT < rearRequest; i++) {
-    if (localRequest[i % MAX_REQUEST_COUNT] / 32 == addr / 32) {
-      return true;
-    }
-  }
-  return false;
 }

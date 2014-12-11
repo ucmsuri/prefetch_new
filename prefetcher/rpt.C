@@ -76,8 +76,8 @@ void Prefetcher::cpuRequest(Request req) {
 		 if((curr_stride = req.addr - (curr_row->last_mem)) == curr_row->last_stride && curr_stride > WORTHWHILE_RPT){
 		   /* if stride is the same as this one,
 		      "punch-it" use it to prefetch */
-		     printf("PRE: same stride found for address %x, with lastmem of %x and curr_req of %x, previous stride at %d\n",
-			    req.pc, curr_row->last_mem, req.addr, curr_stride);
+//		     printf("PRE: same stride found for address %x, with lastmem of %x and curr_req of %x, previous stride at %d\n",
+		//	    req.pc, curr_row->last_mem, req.addr, curr_stride);
 		   _nextReq.addr = req.addr + curr_stride;
 		   _ready = true;
 		   _req_left = NUM_REQS_PER_MISS - 1;  

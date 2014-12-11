@@ -1,63 +1,48 @@
+/*
+ *
+ * File: prefetcher.h
+ * Author: Sat Garcia (sat@cs)
+ * Description: Header file for prefetcher implementation
+ *
+ */
+
 #ifndef PREFETCHER_H
 #define PREFETCHER_H
 
-#define MAX_STATE_COUNT 256
-#define MAX_REQUEST_COUNT 32
-#define NULL_STATE 0xFFFF
-#define L1_PREFETCH_DEGREE 1
-#define L2_PREFETCH_DEGREE 4
-#define L1_CACHE_BLOCK 32
-#define L2_CACHE_BLOCK 64
-
-#define MAX(x, y) (((x) > (y)) ? (x) : (y))
-#define MIN(x, y) (((x) < (y)) ? (x) : (y))
-
 #include <sys/types.h>
-#include <stdio.h>
+#include <string.h>
+#include <cstdlib>
+#include "mem-sim.h"
 
-struct Request;
+#define L2_BLOCK_SIZE 32
+#define NUM_REQS_PER_MISS 4
+#define NUM_RPT_ENTRIES 256
+#define WORTHWHILE_RPT 128
+/* prefetcher state data struct, one row in RPT table.
+   We may want to remove PC and say "ok" to aliasing.  */
+typedef enum{
+  INIT,
+  TRANSITION,
+  STEADY
+} state_t;
 
-struct State {
-  u_int32_t pc;     // PC of the state
-  u_int32_t addr;   // Last access address
-  u_int16_t count;  // Access counter
-  int16_t offset;   // Access offset
-  u_int16_t ahead;  // Accesses prefetched ahead
-  u_int16_t next;   // Next state for LRU
-};
+typedef struct rpt_row_entry{
+  unsigned int pc;
+  unsigned int last_mem;
+  int last_stride; //leaving 8 bits for the tag (256 entry RPT)
+  state_t state;  //currently 2 bits
+} rpt_row_entry_t;
 
 class Prefetcher {
   private:
-  // History state table - Size: sizeof(State) * MAX_STATE_COUNT
-  u_int32_t stateCount;
-  u_int32_t stateHead;
-  State historyState[MAX_STATE_COUNT];
-
-  // Local request queue
-  u_int32_t frontRequest;
-  u_int32_t rearRequest;
-  u_int32_t localRequest[MAX_REQUEST_COUNT];
-
-  // History state table operations
-  void initHistoryState();
-  bool ifEmptyHistoryState();
-  bool ifFullHistoryState();
-  void insertHistoryState(u_int32_t, u_int32_t, u_int16_t, int16_t, u_int16_t);
-  u_int16_t queryHistoryState(u_int32_t);
-  u_int16_t getSecondLRUState();
-
-  // Local request queue operations
-  void initLocalRequest();
-  bool ifEmptyLocalRequest();
-  bool ifFullLocalRequest();
-  bool enLocalRequest(u_int32_t);
-  u_int32_t deLocalRequest();
-  u_int32_t getFrontLocalRequest();
-  bool ifAlreadyInQueue(u_int32_t);
+	bool _ready;
+	Request _nextReq;
+	int _req_left;
+	//struct rpt_row_entry *rpt_table;
+	//static rpt_row_entry_t rpt_table[NUM_RPT_ENTRIES]; 
 
   public:
-  // Construction function
-  Prefetcher();
+	Prefetcher();
 
 	// should return true if a request is ready for this cycle
 	bool hasRequest(u_int32_t cycle);
