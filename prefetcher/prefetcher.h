@@ -10,40 +10,18 @@
 #define PREFETCHER_H
 
 #include <sys/types.h>
-#include <string.h>
-#include <cstdlib>
 #include "mem-sim.h"
-
-#define L2_BLOCK_SIZE 32
-#define NUM_REQS_PER_MISS 4
-#define NUM_RPT_ENTRIES 256
-#define WORTHWHILE_RPT 128
-/* prefetcher state data struct, one row in RPT table.
-   We may want to remove PC and say "ok" to aliasing.  */
-typedef enum{
-  INIT,
-  TRANSITION,
-  STEADY
-} state_t;
-
-typedef struct rpt_row_entry{
-  unsigned int pc;
-  unsigned int last_mem;
-  int last_stride; //leaving 8 bits for the tag (256 entry RPT)
-  state_t state;  //currently 2 bits
-} rpt_row_entry_t;
 
 class Prefetcher {
   private:
 	bool _ready;
 	Request _nextReq;
-	int _req_left;
-	//struct rpt_row_entry *rpt_table;
-	//static rpt_row_entry_t rpt_table[NUM_RPT_ENTRIES]; 
-
   public:
 	Prefetcher();
 
+	int pref_req;
+	int cpu_req;
+	int pref_used;
 	// should return true if a request is ready for this cycle
 	bool hasRequest(u_int32_t cycle);
 

@@ -18,15 +18,17 @@
 //#include <algorithm.h>
 
 int main(int argc, char* argv[]) {
-	if(argc != 2) {
+	if(argc != 4) {
 		printf("Usage: %s [trace file]\n",argv[0]);
 		return 1;
 	}
 
 	int hitTimeL1 = 1; 
-	int accessTimeL2 = 20; 
-	int accessTimeMem = 50; 
-
+	int accessTimeL2 = atoi(argv[2]); 
+	int accessTimeMem = atoi(argv[3]); 
+//	int accessTimeL2 = 20; 
+//	int accessTimeMem = 50; 
+	printf("%d, %d\n",accessTimeL2,accessTimeMem);	
 	int lineSizeL1 = 32;
 	int assocL1 = 4; 
 	int totalSizeL1 = 64; 
@@ -81,7 +83,7 @@ int main(int argc, char* argv[]) {
 	Request req;
 	bool isHit;
  //mine
-	std::unordered_map<u_int32_t,bool> pref_table;
+	//std::unordered_map<u_int32_t,bool> pref_table;
         bool is_pre; //checking whether this entry is due to prefetcher
  	int L2_req_from_pref=0;	
 	int L1_miss=0;
@@ -89,9 +91,9 @@ int main(int argc, char* argv[]) {
 	int L2_miss=0;
 	int L2_pf_used=0;
 	int pref_req=0;
-	int pref_hit=0;
-	u_int32_t temp_addr=0;
-	u_int32_t cpu_addr=0;
+	//int pref_hit=0;
+	//u_int32_t temp_addr=0;
+	//u_int32_t cpu_addr=0;
 
 	while(!cpu.isDone()) {
 
@@ -116,14 +118,14 @@ int main(int argc, char* argv[]) {
 			req.HitL1 = isHit;
 			
 			//mine
-			if (isHit==0){
+			if (isHit==0){L1_miss++;}
 //mine insert the pref.request in pref_table
-			cpu_addr=req.addr >>4;
+	/*		cpu_addr=req.addr >>4;
 			std::unordered_map<u_int32_t,bool>::const_iterator got = pref_table.find(cpu_addr);
                         if(got != pref_table.end()){pref_hit++;}
 			
 			L1_miss++;
-			}
+			}*/
 
 			// notify the prefetcher of what just happened with this memory op
 			pf.cpuRequest(req);
@@ -155,8 +157,8 @@ int main(int argc, char* argv[]) {
 
 				req = pf.getRequest(curr_cycle);
 //mine insert the pref.request in pref_table
-				temp_addr= req.addr >> 4;	
-				pref_table.insert(std::pair<u_int32_t,bool>(temp_addr,true));
+			//	temp_addr= req.addr >> 4;	
+			//	pref_table.insert(std::pair<u_int32_t,bool>(temp_addr,true));
 				req.fromCPU = false;
 				req.load = true;
 				if(queueL2.add(req,curr_cycle)) pf.completeRequest(curr_cycle); // if added to queue then the request is "complete"
@@ -255,7 +257,7 @@ int main(int argc, char* argv[]) {
 
 
 	// create output file name based on trace file name
-	char* outfile = (char *)malloc(sizeof(char)*(strlen(argv[1])+5));
+/*	char* outfile = (char *)malloc(sizeof(char)*(strlen(argv[1])+5));
 	strcpy(outfile,argv[1]);
 	strcat(outfile,".out");
 
@@ -271,20 +273,23 @@ int main(int argc, char* argv[]) {
 	fprintf(fp,"%.4f\n",L2BW);
 	fprintf(fp,"%.4f\n",memBW);
 
-	fclose(fp);
-	printf("Total memory operations: %d\n",cpu.getNrequest());
-	printf("Total L2 requests %d\n",nRequestsL2);
-	printf("Total prefetch request %d\n",pref_req);
+	fclose(fp);*/
+	printf("TOTAL_ACCESS_TIME	%d\n",cpu.Total_access_time());
+	printf("TOTAL_Inst	%d\n",cpu.Total_inst());
+	printf("CPU_CYCLES	%d\n",curr_cycle);
+	printf("MEM_OPS 	%d\n",cpu.getNrequest());
+	printf("L2_REQ 		%d\n",nRequestsL2);
+	printf("PREFETCH_REQ 	%d\n",pref_req);
 
 //	printf("Total CPU request %d\n",pf.cpu_req);
 	printf("pf request replace by CPU in L2 %d\n",queueL2.cpu_dup_replace);
 	printf("front of L2queue request was prefetch %d \n",L2_req_from_pref);
-	printf("L1_miss %d\n",L1_miss);
-	printf("L1 Used prefetch %d\n", L1_pf_used);
-	printf("L2_miss %d\n",L2_miss);
-	printf("L2 Used prefetch %d\n", L2_pf_used);
-	printf("L1_miss  prefetch hit %d\n",pref_hit);
-	printf("Prefetch Accuracy %f\n",float(pref_hit)/pref_req);
+	printf("L1_MISS 	%d\n",L1_miss);
+	printf("L1_HIT_DUE_TO_PREFETCH 	%d\n", L1_pf_used);
+	printf("L2_MISS 	%d\n",L2_miss);
+	printf("L2HIT_DUE_TO_PREFETCH 	 %d\n", L2_pf_used);
+//	printf("L1_miss  prefetch hit %d\n",pref_hit);
+//	printf("PREFETCH_ACCURACY	 %f\n",float(L1_pf_used)/pref_req);
 	return 0;
 }
 

@@ -2,7 +2,7 @@
 
 CPU::CPU(char* trace_file) {
 	//_trace = fopen(trace_file,"r");
-	char temp_string[50];
+	char temp_string[200];
 	sprintf(temp_string,"xz -dc %s",trace_file);
 	_trace = popen(temp_string,"r");
 
@@ -14,7 +14,7 @@ CPU::CPU(char* trace_file) {
 
 	nRequests = hitsL1 = hitsL2 = 0;
 	totalAccessTime = 0;
-
+	total_inst=0;
 	readNextRequest(0); // perform the first read
 }
 
@@ -25,15 +25,15 @@ bool CPU::isDone() { return _done; }
 
 void CPU::readNextRequest(u_int32_t cycle) {
 	char ld;
-	//u_int32_t pc, addr, cycles_since_last;
+//	u_int32_t pc, addr, cycles_since_last;
 	u_int64_t pc, addr, cycles_since_last;
 	if(fscanf(_trace, "%c %lx %lx %u\n",&ld,&pc,&addr,&cycles_since_last) == 4) {
 //	printf("%c %lx %lx %u\n",ld,pc,addr,cycles_since_last);
-		_currReq.addr = addr;
+		_currReq.addr = (u_int32_t)addr;
 		if(ld == 'l') _currReq.load = true;
 		else _currReq.load = false;
 
-		_currReq.pc = pc;
+		_currReq.pc =(u_int32_t) pc;
 
 		_readyAt = cycle + cycles_since_last + 1; // calculate when we will next be ready
 
@@ -41,7 +41,7 @@ void CPU::readNextRequest(u_int32_t cycle) {
 		_currReq.HitL2 = false;
 
 		//printf("next memop ready at cycle %u\n",_readyAt);
-
+		total_inst=total_inst+cycles_since_last+1;
 		nRequests++;
 	}
 	else { _done = true; } // couldn't read anymore so we are done
@@ -97,3 +97,7 @@ double CPU::getHitRateL2() {
 double CPU::getAMAT() { return (double)totalAccessTime / (double)nRequests; }
 
 int CPU::getNrequest() {return nRequests;}
+
+int CPU::Total_access_time() { return totalAccessTime;}
+
+int CPU::Total_inst() { return total_inst;}

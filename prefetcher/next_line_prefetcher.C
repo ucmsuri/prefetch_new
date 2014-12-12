@@ -31,7 +31,7 @@ void Prefetcher::cpuRequest(Request req) {
 //		cpu_req++;
 	if(!_ready && !req.HitL1) {
 //		cpu_req++;
-		_nextReq.addr = req.addr + 16;
+		_nextReq.addr = req.addr + 32;
 		_ready = true;
 	}
 }

@@ -21,6 +21,7 @@ class CPU {
 	u_int32_t hitsL1; // number of L1 hits
 	u_int32_t hitsL2; // number of L2 hits (doesn't include accesses that had an L1 hit)
 	u_int64_t totalAccessTime; // total time spent working on memory requests
+	u_int64_t total_inst;
 
   public:
 	CPU(char* trace_file); 
@@ -56,6 +57,8 @@ class CPU {
 	double getHitRateL2();
 	double getAMAT();
 	int getNrequest();
+	int Total_access_time();
+	int Total_inst();
 };
 
 #endif

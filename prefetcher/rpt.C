@@ -29,6 +29,7 @@ Prefetcher::Prefetcher() {
     rpt_table[i].pc = 0;
     rpt_table[i].last_stride = 0;
     rpt_table[i].last_mem = 0;
+    rpt_table[i].state=INIT;
   }
 
   
