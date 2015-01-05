@@ -169,7 +169,7 @@ int Prefetcher::locateCandidate(int delta){
 */
 bool Prefetcher::hasRequest(u_int32_t cycle){
   _depth++;
-  if (_depth > 3)
+  if (_depth > 4)
     _ready = false;
   else
     _ready = true;

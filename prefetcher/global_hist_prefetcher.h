@@ -6,7 +6,7 @@
 #include <stdint.h>
 #include "mem-sim.h"
 
-#define MAX_CAPACITY 512 //4kb state, 512 * 8byte(struct item entry size)
+#define MAX_CAPACITY 16384 //4kb state, 512 * 8byte(struct item entry size)
 
 /*
 	State item, we will track each missed request's address difference compared

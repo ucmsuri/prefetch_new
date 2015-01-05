@@ -24,9 +24,9 @@
 #define L2INDEXSHIFT 5
 #define L2OFFSET 0x0000001F
 
-#define INDICES 64
+#define INDICES 32
 #define QUEUESIZE 32
-#define PREDICTIONS 4
+#define PREDICTIONS 2
 #define OFFSET  0x0000000F
 #define TCZSHIFT 4
 #define TCZMASK ((TCZONES-1) << TCZSHIFT)

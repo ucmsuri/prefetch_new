@@ -75,22 +75,22 @@ int main(int argc, char* argv[]) {
 
 
 	// statistical stuff
-	u_int32_t nRequestsL2 = 0; // number of requests sent out to L2 (both CPU and prefetcher requests)
-	u_int32_t memCycles = 0; // number of cycles that main memory is being accessed
-	u_int32_t memQsize = 0; // used for calculating average queue length
+	u_int64_t nRequestsL2 = 0; // number of requests sent out to L2 (both CPU and prefetcher requests)
+	u_int64_t memCycles = 0; // number of cycles that main memory is being accessed
+	u_int64_t memQsize = 0; // used for calculating average queue length
 
-	u_int32_t curr_cycle = 1;
+	u_int64_t curr_cycle = 1;
 	Request req;
 	bool isHit;
  //mine
 	//std::unordered_map<u_int32_t,bool> pref_table;
         bool is_pre; //checking whether this entry is due to prefetcher
- 	int L2_req_from_pref=0;	
-	int L1_miss=0;
-	int L1_pf_used=0;
-	int L2_miss=0;
-	int L2_pf_used=0;
-	int pref_req=0;
+ 	uint L2_req_from_pref=0;	
+	uint L1_miss=0;
+	uint L1_pf_used=0;
+	uint L2_miss=0;
+	uint L2_pf_used=0;
+	uint pref_req=0;
 	//int pref_hit=0;
 	//u_int32_t temp_addr=0;
 	//u_int32_t cpu_addr=0;
@@ -274,22 +274,23 @@ int main(int argc, char* argv[]) {
 	fprintf(fp,"%.4f\n",memBW);
 
 	fclose(fp);*/
-	printf("TOTAL_ACCESS_TIME	%d\n",cpu.Total_access_time());
-	printf("TOTAL_Inst	%d\n",cpu.Total_inst());
-	printf("CPU_CYCLES	%d\n",curr_cycle);
-	printf("MEM_OPS 	%d\n",cpu.getNrequest());
-	printf("L2_REQ 		%d\n",nRequestsL2);
-	printf("PREFETCH_REQ 	%d\n",pref_req);
+	printf("TOTAL_ACCESS_TIME	%ld\n",cpu.Total_access_time());
+	printf("TOTAL_Inst	%ld\n",cpu.Total_inst());
+	printf("CPU_CYCLES	%ld\n",curr_cycle);
+	printf("MEM_CYCLES	%ld\n",memCycles);
+	printf("MEM_OPS 	%ld\n",cpu.getNrequest());
+	printf("L2_REQ 		%ld\n",nRequestsL2);
+	printf("PREFETCH_REQ 	%ld\n",pref_req);
 
 //	printf("Total CPU request %d\n",pf.cpu_req);
-	printf("pf request replace by CPU in L2 %d\n",queueL2.cpu_dup_replace);
-	printf("front of L2queue request was prefetch %d \n",L2_req_from_pref);
-	printf("L1_MISS 	%d\n",L1_miss);
-	printf("L1_HIT_DUE_TO_PREFETCH 	%d\n", L1_pf_used);
-	printf("L2_MISS 	%d\n",L2_miss);
-	printf("L2HIT_DUE_TO_PREFETCH 	 %d\n", L2_pf_used);
+	printf("pf request replace by CPU in L2 %ld\n",queueL2.cpu_dup_replace);
+	printf("front of L2queue request was prefetch %ld \n",L2_req_from_pref);
+	printf("L1_MISS 	%ld\n",L1_miss);
+	printf("L1_HIT_DUE_TO_PREFETCH 	%ld\n", L1_pf_used);
+	printf("L2_MISS 	%ld\n",L2_miss);
+	printf("L2HIT_DUE_TO_PREFETCH 	 %ld\n", L2_pf_used);
 //	printf("L1_miss  prefetch hit %d\n",pref_hit);
-//	printf("PREFETCH_ACCURACY	 %f\n",float(L1_pf_used)/pref_req);
+	printf("PREFETCH_ACCURACY	 %f\n",float(L1_pf_used)/pref_req);
 	return 0;
 }
 

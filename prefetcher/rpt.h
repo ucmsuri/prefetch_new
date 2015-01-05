@@ -15,9 +15,9 @@
 #include "mem-sim.h"
 
 #define L2_BLOCK_SIZE 32
-#define NUM_REQS_PER_MISS 4
-#define NUM_RPT_ENTRIES 256
-#define WORTHWHILE_RPT 128
+#define NUM_REQS_PER_MISS 1
+#define NUM_RPT_ENTRIES 1024
+#define WORTHWHILE_RPT 256
 /* prefetcher state data struct, one row in RPT table.
    We may want to remove PC and say "ok" to aliasing.  */
 typedef enum{

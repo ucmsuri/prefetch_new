@@ -46,7 +46,8 @@ void Prefetcher::completeRequest(u_int32_t cycle) {
   
   if(_req_left == 0){
     _ready = false; 
-  }else{
+//     counter =0;  
+}else{
     _req_left--;
     /* determine if we should fetch strides or not */
     rpt_row_num = _nextReq.pc % NUM_RPT_ENTRIES;
@@ -70,15 +71,16 @@ void Prefetcher::cpuRequest(Request req) {
 	       curr_row = &rpt_table[rpt_row_num];
 	       //printf("PRE: rpt_row_num: %d, pc\t%x and curr_pc\t%x\n", rpt_row_num, req.pc, curr_row->pc);
 	       if(curr_row->pc == req.pc){
-		 //printf("DEBUG: req pc matches for the %dth time\n", counter++);
+	
+		// printf("DEBUG: req pc matches for the %dth time\n", counter++);
 		if (req.addr - (curr_row->last_mem) <0)
 		{ printf("reverse stride\n");}
 		 /* this entry is in the table */
-		 if((curr_stride = req.addr - (curr_row->last_mem)) == curr_row->last_stride && curr_stride > WORTHWHILE_RPT){
+		 if((curr_stride = req.addr - (curr_row->last_mem)) == curr_row->last_stride && curr_stride > WORTHWHILE_RPT ){
+//		 if((curr_stride = req.addr - (curr_row->last_mem)) == curr_row->last_stride && curr_stride > WORTHWHILE_RPT){
 		   /* if stride is the same as this one,
 		      "punch-it" use it to prefetch */
-//		     printf("PRE: same stride found for address %x, with lastmem of %x and curr_req of %x, previous stride at %d\n",
-		//	    req.pc, curr_row->last_mem, req.addr, curr_stride);
+//		     printf("PRE: same stride found for address %x, with lastmem of %x and curr_req of %x, previous stride at %d\n",req.pc, curr_row->last_mem, req.addr, curr_stride);
 		   _nextReq.addr = req.addr + curr_stride;
 		   _ready = true;
 		   _req_left = NUM_REQS_PER_MISS - 1;  
