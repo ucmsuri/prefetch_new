@@ -1,250 +1,149 @@
+/*
+ *
+ * File: prefetcher.C
+ * Author: Sat Garcia (sat@cs)
+ * Description: This simple prefetcher waits until there is a D-cache miss then 
+ * requests location (addr + 16), where addr is the address that just missed 
+ * in the cache.
+ *
+ */
+
 #include "prefetcher.h"
 #include <stdio.h>
 
-#define DEBUG 0
-
-// Helper function to initilize GHB table
-void initGHB(struct item *ghbTable){
-
-  if (ghbTable) {
-    for (int i = 0; i < MAX_CAPACITY; i++) {
-      ghbTable[i].delta = 0;
-      ghbTable[i].prev = -1;
-    }
-  } else {
-    if(DEBUG == 1) printf("ERROR: items initialization failed");
-  }
-}
-
-Prefetcher::Prefetcher() {
-
-  _nextReq.addr = 0;
-
-  _ready = false;
-  _queue_full = false;
-  _nextReq.addr = 0;
-  _end_of_queue = 0;
-  _prev_addr = 0;
-  _next_delta = 0;
-  _depth = 0;
-
-  initGHB(_ghb_table);
-}
-
-Prefetcher::~Prefetcher() {
-}
+/* tagged prefetcher, prefetch the next block(s) based on when they
+   are accessed. Our state is a massive bit array indicated whether
+   or not an element is "tagged" - meaning that it has been issued as 
+   a prefetcher request.  Whenever the prefetcher request is used, we 
+   prefetch the next block(s).*/
+static char tags[STATE_SIZE];
 
 
-/*
-  Helper function
-  find max item from the candidate array
-*/
-int findMax(struct candidate candidates[], int end_index){
-  int max_candidate_value = 0;
-  int index = 0;
-
-    //Sort through the candidate list and find the most likely candidate item.
-  for (int i = 0; i < end_index; i++) {
-   if(DEBUG == 1)  printf(" candidate %d, 0x%x, %d\n", i, candidates[i].delta, candidates[i].count);
-    if (candidates[i].count > max_candidate_value) {
-      max_candidate_value = candidates[i].count;
-      index = i;
-    }
-  }
-}
-
-/*
-  Helper function
-  Iterate from the end of the array since is a FIFO queue.
-  Use the given address difference try to find the previous entry in the global
-  history table with the same addresss distance
-*/
-int Prefetcher::locatePrevEntry(int delta){
-  int cur_enq = _end_of_queue;
-  int i;
-  if (_queue_full == false)
-  {
-    for (i = _end_of_queue; i >= 0; i--)
-    {
-      if (_ghb_table[i].delta == delta) {
-        return i;
-      }
-    }
-    return -1;
+/* private functions for prefetcher bit-array management*/
+static
+bool checkPrefetched(u_int32_t addr){
+  int bit_index, char_index, rem_bits;
+  char section, selector, result;
+  bit_index = addr % (STATE_SIZE * sizeof(char));
+  char_index = bit_index/BITS_PER_CHAR;  //8 bits per char
+  rem_bits = bit_index - (char_index * BITS_PER_CHAR);
+  selector = 1;
+  selector = selector << rem_bits;
+  section = tags[char_index];
+  result = section & selector;
+  if(result > 0){
+    return true;
   }else{
-    while( i < MAX_CAPACITY - 1){
-      if (cur_enq == 0)
-        cur_enq = MAX_CAPACITY - 1;
-      else
-        cur_enq--;
-
-      if (_ghb_table[cur_enq].delta == delta) {
-        return cur_enq;
-      }
-      i++;
-    }
-  }
-  return -1;
-}
-
-/*
-  Helper function
-  Search the global history table, with the current address difference,
-  find the next most likely request's address delta relative to current requrest
-  We will keep a candidate array to track all the possible request' address delta
-  and eventually sort the array and add the most possible next distance to current
-  request address, we will use it to format the next prefetched request address.
- */
-int Prefetcher::locateCandidate(int delta){
-  int cur_enq = _end_of_queue;
-  int possible_delta_index;
-  struct candidate candidates[10];
-
-  int i;
-  bool found = false;
-  int candidate_array_index = 0;
-  int flip = 0;
-
-  int index = 0;
-  int next_pos = 0;
-  int temp_delta = 0;
-
-  /* Initialize the candidates array with 10 entrys */
-  for (i = 0; i < 10; i++) {
-    candidates[i].delta = 0;
-    candidates[i].count = 0; //set counter to 0
-  }
-
-  while(1) {
-      next_pos = _ghb_table[cur_enq].prev;
-
-      if (next_pos == -1)
-        break;
-      if (next_pos >= cur_enq && flip)
-        break;
-      if (next_pos >= cur_enq)
-        flip = 1;
-      if (_ghb_table[next_pos].delta != delta)
-        break;
-
-      possible_delta_index = cur_enq + 1;
-      if (possible_delta_index == MAX_CAPACITY){
-        possible_delta_index = 0;
-      }
-
-      /* Insert the addr of candidate entry to candidates array */
-      temp_delta = _ghb_table[possible_delta_index].delta;
-      if (temp_delta) {
-        for (i = 0; i < candidate_array_index; i++) {
-          if (candidates[i].delta == temp_delta) {
-            candidates[i].count++;
-            break;
-          }
-        }
-
-        if (i == candidate_array_index && candidate_array_index < 10) { //add new candidates
-          candidates[candidate_array_index].delta = temp_delta;
-          candidates[candidate_array_index].count++;
-          candidate_array_index++;
-        }
-      }
-
-    if(DEBUG == 1)  printf("delta %d, enqueue %d, next_pos %d, cur_enq %d\n", delta, _end_of_queue, next_pos, cur_enq);
-    cur_enq = next_pos;
-  }
-
-  index = findMax(candidates, candidate_array_index);
-
-  if (candidates[index].delta){
-    return candidates[index].delta;
-  }else{
-    return 0;
+    return false;
   }
 }
 
-/*
-  When CPU is idle, we will issue up to three prefetch request
-  Although you can issue more than 3, but it would occupy the L2 queue and has
-  impact on performence
-*/
-bool Prefetcher::hasRequest(u_int32_t cycle){
-  _depth++;
-  if (_depth > 4)
-    _ready = false;
-  else
-    _ready = true;
-  if(DEBUG == 1) printf("Has request, _depth %d, ready %d\n", _depth, _ready);
-  return _ready;
-}
-
-/*
-  We  will fetch 3 different request based on the next delta value
-  After some trial and fine tuning, we find out 32 is a reasonable value to use
-  for alignment
-*/
-Request Prefetcher::getRequest(u_int32_t cycle){
-  int next_delta;
-
-  switch(_depth){
-    case 1:
-      next_delta = _next_delta;
-      break;
-    case 2:
-      next_delta = _next_delta - 32;
-      break;
-    default:
-      next_delta = _next_delta + 32;
-  }
-
-  _nextReq.addr = _prev_addr + next_delta;
-  if(DEBUG == 1) printf("Next address %d\n", _nextReq.addr);
-  return _nextReq;
-}
-
-void Prefetcher::completeRequest(u_int32_t cycle){
+static
+void markPrefetched(u_int32_t addr){
+  int bit_index, char_index, rem_bits;
+  char section, selector, result;
+  bit_index = addr % (STATE_SIZE * sizeof(char));
+  char_index = bit_index/BITS_PER_CHAR; //8 bits per char
+  rem_bits = bit_index - (char_index * BITS_PER_CHAR);
+  /*printf("For address %d, bit_index %d, char_index %d and rem_bits %d\n",
+    addr, bit_index, char_index, rem_bits); */
+  selector = 1;
+  selector = selector << rem_bits;
+  tags[char_index] = tags[char_index] | selector;
   return;
 }
 
-/*
+static
+void markUnPrefetched(u_int32_t addr){
+  int bit_index, char_index, rem_bits;
+  char section, selector, result;
+  bit_index = addr % (STATE_SIZE * sizeof(char));
+  char_index = bit_index/BITS_PER_CHAR; //8 bits per char
+  rem_bits = bit_index - (char_index * BITS_PER_CHAR);
+  selector = 1;
+  selector = selector << rem_bits;
+  tags[char_index] = tags[char_index] & (~selector);
+  return;
+}
 
-
-*/
-
-void Prefetcher::cpuRequest(Request req){
-  int delta;
-  int next_delta;
-
-  if(!_ready && !req.HitL1) {
-    delta = req.addr - _prev_addr;
-
-    //TODO use LRU replacement
-    _ghb_table[_end_of_queue].delta = delta;
-    _ghb_table[_end_of_queue].prev = locatePrevEntry(delta);
-    _end_of_queue++;
-
-    if (_end_of_queue == MAX_CAPACITY){
-      _end_of_queue = 0;
-      _queue_full = true;
+static
+bool bitArrayTest(){
+  //u_int32_t baseTest = 0xA08A28AC;  //prime bits marked
+  tags[0] = 0xff;
+  int i;
+  memset(tags, 0, STATE_SIZE);
+  for (i = 0; i < sizeof(u_int32_t) * 8; i+=2){
+    if(checkPrefetched(i)){
+      return false;
     }
-
-    next_delta = locateCandidate(delta);
-
-    /* align next_delta to 64 */
-    if (next_delta >= 0 && next_delta < 64) {
-     if(DEBUG == 1) printf("find candidate delta %d for 0x%x\n", next_delta, req.addr);
-      next_delta = 64;
-    } else if (next_delta < 0 && next_delta > -64){
-      next_delta = -64;
-    }
-
-    _next_delta = next_delta;
-    _prev_addr = req.addr;
-
-    /*
-       Set flag variable to ready state, then when CPU is in idle state,
-       we can start prefetching
-    */
-    _ready = true;
-    _depth = 0;
+    markPrefetched(i);
   }
+  
+  for (i = 0; i < sizeof(u_int32_t) * 8; i+=3){
+    markUnPrefetched(i);
+  }
+  for(i = 0; i < sizeof(u_int32_t) * 8; i++){
+    if((i % 2) == 0 && (i % 6) != 0 ){
+      if(!checkPrefetched(i)){
+	return false;
+      }
+    }else{
+      if(checkPrefetched(i)){
+	return false;
+      }
+    }
+  }
+  //printf("Value of first 32 bits of tags %x\n", *((int *)tags));
+  return true;
+}
+      
+  
+
+Prefetcher::Prefetcher() { 
+    _ready = false; 
+    /* mark all tags as not prefetched */
+    memset(tags, 0, STATE_SIZE);
+    /*    if(bitArrayTest()){
+      printf("Bit array test passed!\n");
+      } */
+}
+
+bool Prefetcher::hasRequest(u_int32_t cycle) { return _ready; }
+
+Request Prefetcher::getRequest(u_int32_t cycle) { return _nextReq; }
+
+void Prefetcher::completeRequest(u_int32_t cycle) { 
+    if(_req_left == 0){
+    _ready = false; 
+  }else{
+    _req_left--;
+    _nextReq.addr = _nextReq.addr + L2_BLOCK_SIZE;
+    markPrefetched(_nextReq.addr);  //mark this as a prefetched block 
+  }
+}
+
+void Prefetcher::cpuRequest(Request req) { 
+        
+	/*if it is a hit and this was a prefetch address, 
+	  get the next one that hasn't been prefetched*/
+	if(req.HitL1 && checkPrefetched(req.addr) && !_ready){
+	       _nextReq.addr = req.addr + L2_BLOCK_SIZE;
+	       /*while(checkPrefetched(_nextReq.addr)){
+		 _nextReq.addr += L2_BLOCK_SIZE;
+		 printf("INFINITE LOOP!\n");
+		 } */
+	       markPrefetched(_nextReq.addr);  //mark this as a prefetched block 
+	       _ready = true;
+	       _req_left = NUM_REQS_PER_MISS - 1;
+	}else if(!_ready && !req.HitL1) {
+	  /* this was a pure miss, fetch the next n blocks
+	     regardless (even if prefetched, prob evicted from cache */
+	  _nextReq.addr = req.addr + L2_BLOCK_SIZE;
+	  _ready = true;
+	  _req_left = NUM_REQS_PER_MISS - 1;
+	} 
+        /* mark prefetch tag as 0 since CPU requested this */
+        markUnPrefetched(req.addr);
+
+
 }

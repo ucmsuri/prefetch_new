@@ -29,7 +29,7 @@ int main(int argc, char* argv[]) {
 //	int accessTimeL2 = 20; 
 //	int accessTimeMem = 50; 
 	printf("%d, %d\n",accessTimeL2,accessTimeMem);	
-	int lineSizeL1 = 32;
+	int lineSizeL1 = 64;
 	int assocL1 = 4; 
 	int totalSizeL1 = 64; 
 
@@ -70,8 +70,8 @@ int main(int argc, char* argv[]) {
 	Prefetcher pf;
 
 	memQueue writeBuffer(20,&DCache,accessTimeL2,true,true,'a');
-	memQueue queueL2(20,&DCache,accessTimeL2,true,false,'b');
-	memQueue queueMem(10,&L2Cache,accessTimeMem,false,false,'c');
+	memQueue queueL2(6,&DCache,accessTimeL2,true,false,'b');
+	memQueue queueMem(6,&L2Cache,accessTimeMem,false,false,'c');
 
 
 	// statistical stuff
@@ -91,7 +91,14 @@ int main(int argc, char* argv[]) {
 	uint L2_miss=0;
 	uint L2_pf_used=0;
 	uint pref_req=0;
-	//int pref_hit=0;
+	uint pref_complete=0;
+	uint L1_hit=0;
+        uint total_L2_req=0;
+	uint mem_req_from_L2=0;
+	uint L2_hit=0;
+	uint L2_write_hit=0;
+	uint l2qtomemq=0;	
+//int pref_hit=0;
 	//u_int32_t temp_addr=0;
 	//u_int32_t cpu_addr=0;
 
@@ -110,6 +117,7 @@ int main(int argc, char* argv[]) {
 
 			// check for L1 hit
 			isHit = DCache.check(req.addr,req.load);
+			if(isHit){L1_hit++;}
 	//mine
 			is_pre= DCache.is_prefetch(req.addr);
 			if(is_pre){L1_pf_used++;}
@@ -161,7 +169,10 @@ int main(int argc, char* argv[]) {
 			//	pref_table.insert(std::pair<u_int32_t,bool>(temp_addr,true));
 				req.fromCPU = false;
 				req.load = true;
-				if(queueL2.add(req,curr_cycle)) pf.completeRequest(curr_cycle); // if added to queue then the request is "complete"
+				if(queueL2.add(req,curr_cycle)) {
+							pf.completeRequest(curr_cycle); // if added to queue then the request is "complete"
+							pref_complete++;
+						}
 			}
 
 			if(cpu_status == STALLED_WB) { // attempt to put it in the write buffer
@@ -180,7 +191,7 @@ int main(int argc, char* argv[]) {
 			//printf("servicing the l2 queue on cycle %u\n",curr_cycle);
 			req = queueL2.getFront();
 //mine stats
-			
+			total_L2_req++;			
 			if (req.fromCPU==false){L2_req_from_pref++;}
 
 			isHit = L2Cache.check(req.addr,req.load);
@@ -189,6 +200,7 @@ int main(int argc, char* argv[]) {
 			is_pre= L2Cache.is_prefetch(req.addr);
 			if(is_pre){L2_pf_used++;}
 	//mine
+			if (isHit){L2_hit++;}
 			if (isHit==0){L2_miss++;}
 
 			if(isHit) {
@@ -198,6 +210,7 @@ int main(int argc, char* argv[]) {
 			}
 			else {
 				if(queueMem.add(req,curr_cycle)) queueL2.remove(); // succesfully added to memory queue so we can remove it from L2 queue
+				l2qtomemq++;
 			}
 		}
 
@@ -205,6 +218,7 @@ int main(int argc, char* argv[]) {
 		if(queueMem.frontReady(curr_cycle)) {
 			//printf("servicing the mem queue on cycle %u\n",curr_cycle);
 			req = queueMem.getFront();
+			mem_req_from_L2++;
 			queueMem.remove();
 
 			// update both L2 and D cache
@@ -228,6 +242,7 @@ int main(int argc, char* argv[]) {
 			cpu.storeHitL2(isHit);
 
 			if(isHit) { // store hit in L2 so just save it and we are done
+				L2_write_hit++;
 				L2Cache.access(req.addr,req.load,req.fromCPU);
 				writeBuffer.remove();
 			}
@@ -279,18 +294,24 @@ int main(int argc, char* argv[]) {
 	printf("CPU_CYCLES	%ld\n",curr_cycle);
 	printf("MEM_CYCLES	%ld\n",memCycles);
 	printf("MEM_OPS 	%ld\n",cpu.getNrequest());
-	printf("L2_REQ 		%ld\n",nRequestsL2);
-	printf("PREFETCH_REQ 	%ld\n",pref_req);
-
-//	printf("Total CPU request %d\n",pf.cpu_req);
-	printf("pf request replace by CPU in L2 %ld\n",queueL2.cpu_dup_replace);
-	printf("front of L2queue request was prefetch %ld \n",L2_req_from_pref);
-	printf("L1_MISS 	%ld\n",L1_miss);
+	printf("L1_HIT 		%ld\n",L1_hit);
 	printf("L1_HIT_DUE_TO_PREFETCH 	%ld\n", L1_pf_used);
+	printf("L1_MISS 	%ld\n",L1_miss);
+	printf("PREFETCH_REQ 	%ld\n",pref_req);
+	printf("PREFETCH_COMP 	%ld\n",pref_complete);
+	printf("L2_REQ 		%ld\n",nRequestsL2);
+	printf("L2_REQ_L2Q      %ld\n",total_L2_req);
+	printf("L2_REQ_L2Q_PF   %ld \n",L2_req_from_pref);
+//	printf("Total CPU request %d\n",pf.cpu_req);
+	printf("PF_REQ_REPLACE_BY_CPU_L2Q %ld\n",queueL2.cpu_dup_replace);
+	printf("L2_HIT 		%ld\n",L2_hit);
 	printf("L2_MISS 	%ld\n",L2_miss);
 	printf("L2HIT_DUE_TO_PREFETCH 	 %ld\n", L2_pf_used);
 //	printf("L1_miss  prefetch hit %d\n",pref_hit);
-	printf("PREFETCH_ACCURACY	 %f\n",float(L1_pf_used)/pref_req);
+	printf("MQ_L2Q		%d\n",l2qtomemq);
+	printf("MEM_REQ_MEMQ    %d\n",mem_req_from_L2);
+        printf("L2_WRITE_HIT    %d\n",L2_write_hit);
+	printf("PREFETCH_ACCURACY	 %f\n",float(L1_pf_used)/L2_req_from_pref);
 	return 0;
 }
 

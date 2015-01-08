@@ -169,7 +169,7 @@ int Prefetcher::locateCandidate(int delta){
 */
 bool Prefetcher::hasRequest(u_int32_t cycle){
   _depth++;
-  if (_depth > 4)
+  if (_depth > 16)
     _ready = false;
   else
     _ready = true;
@@ -197,7 +197,7 @@ Request Prefetcher::getRequest(u_int32_t cycle){
   }
 
   _nextReq.addr = _prev_addr + next_delta;
-  if(DEBUG == 1) printf("Next address %d\n", _nextReq.addr);
+  if(DEBUG == 1) printf("Next address %x\n", _nextReq.addr);
   return _nextReq;
 }
 

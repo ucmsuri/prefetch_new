@@ -1,12 +1,12 @@
 #ifndef PREFETCHER_H
 #define PREFETCHER_H
 
-#define MAX_STATE_COUNT 256
-#define MAX_REQUEST_COUNT 32
+#define MAX_STATE_COUNT 1024
+#define MAX_REQUEST_COUNT 2
 #define NULL_STATE 0xFFFF
-#define L1_PREFETCH_DEGREE 1
-#define L2_PREFETCH_DEGREE 4
-#define L1_CACHE_BLOCK 32
+#define L1_PREFETCH_DEGREE 2
+#define L2_PREFETCH_DEGREE 2
+#define L1_CACHE_BLOCK 64
 #define L2_CACHE_BLOCK 64
 
 #define MAX(x, y) (((x) > (y)) ? (x) : (y))

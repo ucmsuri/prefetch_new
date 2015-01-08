@@ -11,15 +11,41 @@
 //#include "gzstream.h"
 using namespace std;
 
+PIN_LOCK lock;
+
+INT32 numThreads = 0;
+const INT32 MaxNumThreads = 4;
+
+struct THREAD_DATA
+{
+    UINT64 _count;
+    UINT64 _icount_last;
+    UINT64 _sincelast;
+    UINT64 _branch;
+};
+
+
+THREAD_DATA t_icount[MaxNumThreads];
+
 static UINT32 icount = 0;
 UINT32 icount_lastmem;
-UINT32 sincelast;
+UINT64 sincelast=0;
 UINT32 memrefs; // number of memory accesses so far
 #define MAX_REFS 200000000 // we want to limit the size of the log files so we will limit trace files to 2M lines
 
 // This function is called before every instruction is executed
-VOID docount() { icount++; }
+//VOID docount() { icount++; }
+VOID docount(THREADID tid) { 
+t_icount[tid]._count++; 
+}
 
+int update_count(THREADID tid) { 
+    if(t_icount[tid]._count == t_icount[tid]._icount_last) sincelast = 0;
+	 else {
+			sincelast = t_icount[tid]._count - t_icount[tid]._icount_last - 1;
+			t_icount[tid]._icount_last = t_icount[tid]._count;
+		     }
+}
 /*
 // update lastmem info and write to file (load)
 VOID RecordMemRead(VOID * ip, VOID * addr)
@@ -175,7 +201,9 @@ VOID Trace(TRACE trace, VOID *v)
     {
         for(INS ins = BBL_InsHead(bbl); INS_Valid(ins); ins=INS_Next(ins))
         {
-    	   INS_InsertCall(ins, IPOINT_BEFORE, (AFUNPTR)docount, IARG_END);
+    	   //INS_InsertCall(ins, IPOINT_BEFORE, (AFUNPTR)docount, IARG_END);
+    	   INS_InsertCall(ins, IPOINT_BEFORE, (AFUNPTR)docount,IARG_THREAD_ID, IARG_END);
+    //cout << "HERE" << endl;
             UINT32 memoryOperands = INS_MemoryOperandCount(ins);
 
             for (UINT32 memOp = 0; memOp < memoryOperands; memOp++)
@@ -186,11 +214,12 @@ VOID Trace(TRACE trace, VOID *v)
                 // for each.
                 if (INS_MemoryOperandIsRead(ins, memOp))
                 {
-			    if(icount == icount_lastmem) sincelast = 0;
+	   INS_InsertCall(ins, IPOINT_BEFORE, (AFUNPTR)update_count,IARG_THREAD_ID, IARG_END);
+			 /*   if(icount == icount_lastmem) sincelast = 0;
        				 else {
                 			sincelast = icount - icount_lastmem - 1;
                 			icount_lastmem = icount;
-        			     }
+        			     }*/
                     INS_InsertFillBuffer(ins, IPOINT_BEFORE, bufId,
                                          IARG_INST_PTR, offsetof(struct MEMREF, pc),
                                          IARG_MEMORYOP_EA, memOp, offsetof(struct MEMREF, ea),
@@ -201,11 +230,12 @@ VOID Trace(TRACE trace, VOID *v)
 
                 if (INS_MemoryOperandIsWritten(ins, memOp))
                 {
-			    if(icount == icount_lastmem) sincelast = 0;
+ 	   INS_InsertCall(ins, IPOINT_BEFORE, (AFUNPTR)update_count,IARG_THREAD_ID, IARG_END);
+	/*		    if(icount == icount_lastmem) sincelast = 0;
        				 else {
                 			sincelast = icount - icount_lastmem - 1;
                 			icount_lastmem = icount;
-        			     }
+        			     }*/
                     INS_InsertFillBuffer(ins, IPOINT_BEFORE, bufId,
                                          IARG_INST_PTR, offsetof(struct MEMREF, pc),
                                          IARG_MEMORYOP_EA, memOp, offsetof(struct MEMREF, ea),
@@ -306,6 +336,7 @@ VOID ThreadFini(THREADID tid, const CONTEXT *ctxt, INT32 code, VOID *v)
     MLOG * mlog = static_cast<MLOG*>(PIN_GetThreadData(mlog_key, tid));
 
     delete mlog;
+    cout << "Count[" << decstr(tid) << "]= " << t_icount[tid]._count << endl;
 
     PIN_SetThreadData(mlog_key, 0, tid);
 }
@@ -355,7 +386,6 @@ int main(int argc, char * argv[])
         cerr << "Error: could not allocate initial buffer" << endl;
         return 1;
     }
-
     // Initialize thread-specific data not handled by buffering api.
     mlog_key = PIN_CreateThreadDataKey(0);
 
