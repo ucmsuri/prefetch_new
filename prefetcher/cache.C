@@ -102,6 +102,7 @@ bool Cache::is_prefetch(u_int32_t addr) {
 	for(int i = 0; i < _assoc; ++i) {
 		if(tag == tags[index][i] && valid[index][i]) { // found it
 			pf_bit = pref_bit[index][i];
+                        pref_bit[index][i]=false;
 			break; // no need to search more
 		}
 	}
@@ -130,7 +131,8 @@ u_int32_t Cache::getIndex(u_int32_t addr) {
 // accesses cache, returns true if we have a hit, false otherwise, don't change any state if modify == false
 bool Cache::access(u_int32_t addr, bool load, bool pf_bit) {
 	bool isHit = false;
-
+//mine  
+	bool from_cpu = pf_bit;
 	int b = (int)log2((double)_blockSize);
 	int s = (int)log2((double)_numSets);
 	int t = 32 - b - s;
@@ -152,7 +154,12 @@ bool Cache::access(u_int32_t addr, bool load, bool pf_bit) {
 		if(tag == tags[index][i] && valid[index][i]) { // found it
 			isHit = true;
 //mine
-			pref_bit[index][i]=!pf_bit;
+			if (from_cpu==true)
+				pref_bit[index][i]=false;
+			else
+				pref_bit[index][i]=true;
+
+			//pref_bit[index][i]=!pf_bit;
 
 			if(!load)
 				dirty[index][i] = true; // its dirty now that we stored to it
@@ -182,8 +189,13 @@ bool Cache::access(u_int32_t addr, bool load, bool pf_bit) {
 			if(!valid[index][i]) { // found an open spot... all is good with the world
 				tags[index][i] = tag;
 				valid[index][i] = true;
-//mine				
-				pref_bit[index][i]=!pf_bit;
+//mine			       
+					
+			if (from_cpu==true)
+				pref_bit[index][i]=false;
+			else
+				pref_bit[index][i]=true;
+		//	pref_bit[index][i]=!pf_bit;
 				if(!load) dirty[index][i] = true;
 
 				// need to update LRU bits if we are using that policy
@@ -209,7 +221,11 @@ bool Cache::access(u_int32_t addr, bool load, bool pf_bit) {
 				tags[index][0] = tag;
 				valid[index][0] = true;
 //mine
-				pref_bit[index][0]=!pf_bit;
+			if (from_cpu==true)
+				pref_bit[index][0]=false;
+			else
+				pref_bit[index][0]=true;
+	//	pref_bit[index][0]=!pf_bit;
 				//if(dirty[index][0]) evicted = true;
 
 				if(load) dirty[index][0] = false;
@@ -222,7 +238,11 @@ bool Cache::access(u_int32_t addr, bool load, bool pf_bit) {
 				tags[index][temp] = tag;
 				valid[index][temp] = true;
 //mine
-				pref_bit[index][temp]=!pf_bit;
+			if (from_cpu==true)
+				pref_bit[index][temp]=false;
+			else
+				pref_bit[index][temp]=true;
+	//	pref_bit[index][temp]=!pf_bit;
 
 				//if(dirty[index][temp]) evicted = true;
 
@@ -238,7 +258,11 @@ bool Cache::access(u_int32_t addr, bool load, bool pf_bit) {
 						tags[index][i] = tag;
 						valid[index][i] = true;
 //mine
-						pref_bit[index][i]=!pf_bit;
+					if (from_cpu==true)
+						pref_bit[index][i]=false;
+					else
+						pref_bit[index][i]=true;
+			//			pref_bit[index][i]=!pf_bit;
 						
 						//if(dirty[index][i]) evicted = true;
 

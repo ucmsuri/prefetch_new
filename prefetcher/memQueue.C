@@ -48,6 +48,10 @@ memQueue::memQueue(u_int32_t capacity, Cache *c, u_int32_t latency, bool pipelin
 
 //mine
 	cpu_dup_replace=0;	
+	duplicate_found=0;	
+	duplicate_found_pf=0;	
+	duplicate_found_pf_oldpf=0;	
+	duplicate_found_pf_olddem=0;	
 }
 
 memQueue::~memQueue() { 
@@ -68,7 +72,16 @@ bool memQueue::add(Request req, u_int32_t cycle) {
 		tag = _source->getTag(req.addr);
 
 		int dupLoc = findDup(tag,index); // see if there is a duplicate request (-1 = not found)
-
+		if (dupLoc) {
+			duplicate_found++;
+                        if(req.fromCPU==false) {
+				duplicate_found_pf++;
+                        	if(_queue[dupLoc].fromCPU==false) 
+					duplicate_found_pf_oldpf++;
+				else 
+					duplicate_found_pf_olddem++;
+			}
+		}
 		if(dupLoc == -1||_queue[dupLoc].fromCPU) { // no duplicate found
 			_queue[_rear] = req;
 			_tags[_rear] = tag;

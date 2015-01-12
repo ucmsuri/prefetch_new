@@ -5,7 +5,7 @@ LINKER?=${CXX}
 CXXFLAGS ?=  -Wno-unknown-pragmas $(DBG) $(OPT)  
 
 CXX=g++
-TOOL_ROOTS = memtracer_mt memtracer 
+TOOL_ROOTS = memtracer_mt
 TOOLS = $(TOOL_ROOTS:%=$(OBJDIR)%$(PINTOOL_SUFFIX))
 
 

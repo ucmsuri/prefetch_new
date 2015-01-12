@@ -69,13 +69,15 @@ int main(int argc, char* argv[]) {
 
 	Prefetcher pf;
 
-	memQueue writeBuffer(20,&DCache,accessTimeL2,true,true,'a');
-	memQueue queueL2(6,&DCache,accessTimeL2,true,false,'b');
-	memQueue queueMem(6,&L2Cache,accessTimeMem,false,false,'c');
+	memQueue writeBuffer(4,&DCache,accessTimeL2,true,true,'a');
+	memQueue queueL2(4,&DCache,accessTimeL2,true,false,'b');
+	memQueue queueMem(4,&L2Cache,accessTimeMem,false,false,'c');
 
 
 	// statistical stuff
 	u_int64_t nRequestsL2 = 0; // number of requests sent out to L2 (both CPU and prefetcher requests)
+	u_int64_t nRequestsL2Load = 0; // number of requests sent out to L2 (both CPU and prefetcher requests)
+	u_int64_t nRequestsL2Store = 0; // number of requests sent out to L2 (both CPU and prefetcher requests)
 	u_int64_t memCycles = 0; // number of cycles that main memory is being accessed
 	u_int64_t memQsize = 0; // used for calculating average queue length
 
@@ -86,18 +88,23 @@ int main(int argc, char* argv[]) {
 	//std::unordered_map<u_int32_t,bool> pref_table;
         bool is_pre; //checking whether this entry is due to prefetcher
  	uint L2_req_from_pref=0;	
+ 	uint L2_req_from_pref_is_hit=0;	
+ 	uint L2_req_from_pref_is_miss=0;	
 	uint L1_miss=0;
 	uint L1_pf_used=0;
 	uint L2_miss=0;
 	uint L2_pf_used=0;
 	uint pref_req=0;
 	uint pref_complete=0;
+	uint pref_dropped=0;
 	uint L1_hit=0;
         uint total_L2_req=0;
 	uint mem_req_from_L2=0;
 	uint L2_hit=0;
+	uint L2_acc=0;
 	uint L2_write_hit=0;
-	uint l2qtomemq=0;	
+	uint l2qtomemq=0;
+	uint waste_req=0;	
 //int pref_hit=0;
 	//u_int32_t temp_addr=0;
 	//u_int32_t cpu_addr=0;
@@ -144,11 +151,15 @@ int main(int argc, char* argv[]) {
 			}
 			else if(req.load) {
 				nRequestsL2++;
-				if(queueL2.add(req,curr_cycle)) cpu.setStatus(WAITING); // CPU is now "waiting" for response from L2/mem
-				else cpu.setStatus(STALLED_L2); // no room in l2 queue so we are "stalled" on this request
+				nRequestsL2Load++;
+				if(queueL2.add(req,curr_cycle)) 
+					cpu.setStatus(WAITING); // CPU is now "waiting" for response from L2/mem
+				else 
+					cpu.setStatus(STALLED_L2); // no room in l2 queue so we are "stalled" on this request
 			}
 			else { 
 				nRequestsL2++;
+				nRequestsL2Store++;
 
 				if (writeBuffer.add(req,curr_cycle)) cpu.completeRequest(curr_cycle); 
 				else { // need to stall for an entry in the write buffer to open up
@@ -170,9 +181,12 @@ int main(int argc, char* argv[]) {
 				req.fromCPU = false;
 				req.load = true;
 				if(queueL2.add(req,curr_cycle)) {
-							pf.completeRequest(curr_cycle); // if added to queue then the request is "complete"
-							pref_complete++;
-						}
+					pf.completeRequest(curr_cycle); // if added to queue then the request is "complete"
+					pref_complete++;
+				} else {
+					pref_dropped++;
+				}
+					 
 			}
 
 			if(cpu_status == STALLED_WB) { // attempt to put it in the write buffer
@@ -190,29 +204,56 @@ int main(int argc, char* argv[]) {
 		if(queueL2.frontReady(curr_cycle)) { // check to see if the front element in the queue is ready
 			//printf("servicing the l2 queue on cycle %u\n",curr_cycle);
 			req = queueL2.getFront();
-//mine stats
-			total_L2_req++;			
-			if (req.fromCPU==false){L2_req_from_pref++;}
-
 			isHit = L2Cache.check(req.addr,req.load);
+                        L2_acc++;
 			cpu.loadHitL2(isHit);
-	//mine
 			is_pre= L2Cache.is_prefetch(req.addr);
-			if(is_pre){L2_pf_used++;}
-	//mine
-			if (isHit){L2_hit++;}
-			if (isHit==0){L2_miss++;}
+//mine stats
+//		if(!DCache.check(req.addr,req.load)) //mine: If the current request is not in L1 cache, send current request to L2
+//		{
+		//	printf("L1 MISS SO L2 REQ\n"); 
+			//total_L2_req++;			
+			//if (req.fromCPU==false){L2_req_from_pref++;}
 
+	//mine
+			//is_pre= L2Cache.is_prefetch(req.addr);
+			//if(is_pre){L2_pf_used++;}
+	//mine
+			//if (isHit){L2_hit++;}
+			//if (isHit==0){L2_miss++;}
+//		}
+		//	printf("REMOVING WASTE REQ\n"); 
 			if(isHit) {
+			total_L2_req++;
+			L2_hit++;			
+			if(is_pre && req.fromCPU==true){L2_pf_used++;}
+
+			if (req.fromCPU==false){L2_req_from_pref++;L2_req_from_pref_is_hit++;}
+
 				DCache.access(req.addr,req.load,req.fromCPU); // update D cache
 				if(req.fromCPU) cpu.completeRequest(curr_cycle); // this request was from the CPU so update state to show we are done
 				queueL2.remove(); // remove this request from the queue
+                                //here
 			}
 			else {
-				if(queueMem.add(req,curr_cycle)) queueL2.remove(); // succesfully added to memory queue so we can remove it from L2 queue
-				l2qtomemq++;
+				if(queueMem.add(req,curr_cycle)) {
+			total_L2_req++;			
+			L2_miss++;
+			if (req.fromCPU==false){L2_req_from_pref++;L2_req_from_pref_is_miss++;}
+
+					queueL2.remove(); // succesfully added to memory queue so we can remove it from L2 queue
+        				//here
+		//		queueMem.add(req,curr_cycle); //mine: If L2 Miss then just add the entry into Memqueue and don't remove the front entry from L2 Queue.
+					l2qtomemq++;
+			     }
 			}
-		}
+	
+/*		else {
+			printf("REMOVING WASTE REQ\n"); 
+			waste_req++;
+			queueL2.remove(); //remove the front end of the queue if current request is already in L1 and update it as waste request to L2
+		     }*/
+	}
 
 		// service the memory queue
 		if(queueMem.frontReady(curr_cycle)) {
@@ -299,11 +340,21 @@ int main(int argc, char* argv[]) {
 	printf("L1_MISS 	%ld\n",L1_miss);
 	printf("PREFETCH_REQ 	%ld\n",pref_req);
 	printf("PREFETCH_COMP 	%ld\n",pref_complete);
+	printf("PREFETCH_DROP 	%ld\n",pref_dropped);
 	printf("L2_REQ 		%ld\n",nRequestsL2);
+	printf("L2_REQ_LD 		%ld\n",nRequestsL2Load);
+	printf("L2_REQ_DT 		%ld\n",nRequestsL2Store);
 	printf("L2_REQ_L2Q      %ld\n",total_L2_req);
 	printf("L2_REQ_L2Q_PF   %ld \n",L2_req_from_pref);
+	printf("L2_REQ_L2Q_PF_HIT   %ld \n",L2_req_from_pref_is_hit);
+	printf("L2_REQ_L2Q_PF_MISS   %ld \n",L2_req_from_pref_is_miss);
 //	printf("Total CPU request %d\n",pf.cpu_req);
 	printf("PF_REQ_REPLACE_BY_CPU_L2Q %ld\n",queueL2.cpu_dup_replace);
+	printf("DUPLICATE_L2Q %ld\n",queueL2.duplicate_found);
+	printf("DUPLICATE_L2Q_PF %ld\n",queueL2.duplicate_found_pf);
+	printf("DUPLICATE_L2Q_PF_OLDPF %ld\n",queueL2.duplicate_found_pf_oldpf);
+	printf("DUPLICATE_L2Q_PF_OLDDEM %ld\n",queueL2.duplicate_found_pf_olddem);
+	printf("WASTE_L2_REQ_L2Q %d\n",waste_req);
 	printf("L2_HIT 		%ld\n",L2_hit);
 	printf("L2_MISS 	%ld\n",L2_miss);
 	printf("L2HIT_DUE_TO_PREFETCH 	 %ld\n", L2_pf_used);
@@ -312,6 +363,7 @@ int main(int argc, char* argv[]) {
 	printf("MEM_REQ_MEMQ    %d\n",mem_req_from_L2);
         printf("L2_WRITE_HIT    %d\n",L2_write_hit);
 	printf("PREFETCH_ACCURACY	 %f\n",float(L1_pf_used)/L2_req_from_pref);
+	printf("PREFETCH_ACCURACY_2	 %f\n",float(L1_pf_used)/total_L2_req);
 	return 0;
 }
 

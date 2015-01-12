@@ -10,140 +10,140 @@
 
 #include "prefetcher.h"
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-/* tagged prefetcher, prefetch the next block(s) based on when they
-   are accessed. Our state is a massive bit array indicated whether
-   or not an element is "tagged" - meaning that it has been issued as 
-   a prefetcher request.  Whenever the prefetcher request is used, we 
-   prefetch the next block(s).*/
-static char tags[STATE_SIZE];
-
-
-/* private functions for prefetcher bit-array management*/
-static
-bool checkPrefetched(u_int32_t addr){
-  int bit_index, char_index, rem_bits;
-  char section, selector, result;
-  bit_index = addr % (STATE_SIZE * sizeof(char));
-  char_index = bit_index/BITS_PER_CHAR;  //8 bits per char
-  rem_bits = bit_index - (char_index * BITS_PER_CHAR);
-  selector = 1;
-  selector = selector << rem_bits;
-  section = tags[char_index];
-  result = section & selector;
-  if(result > 0){
-    return true;
-  }else{
-    return false;
-  }
+Prefetcher::Prefetcher() {
+	lastMiss = 0xFFFFFFFF;
+	for(int i = 0; i < INDICES; i++){
+		MissTable[i] = 0;
+		for(int j = 0; j < PREDICTIONS; j++){
+			PredictionTable[i][j].hits = 0;
+			PredictionTable[i][j].addr = 0;
+		}
+	}
+	for(int k = 0; k < QUEUESIZE; k++){
+		PrefetchQueue[k].addr = 0;
+		PrefetchQueue[k].prob = 0;
+	}
+	_ready = false;
 }
 
-static
-void markPrefetched(u_int32_t addr){
-  int bit_index, char_index, rem_bits;
-  char section, selector, result;
-  bit_index = addr % (STATE_SIZE * sizeof(char));
-  char_index = bit_index/BITS_PER_CHAR; //8 bits per char
-  rem_bits = bit_index - (char_index * BITS_PER_CHAR);
-  /*printf("For address %d, bit_index %d, char_index %d and rem_bits %d\n",
-    addr, bit_index, char_index, rem_bits); */
-  selector = 1;
-  selector = selector << rem_bits;
-  tags[char_index] = tags[char_index] | selector;
-  return;
+bool Prefetcher::hasRequest(u_int32_t cycle) { return _ready;}
+
+Request Prefetcher::getRequest(u_int32_t cycle) { 
+    return _nextReq; 
 }
 
-static
-void markUnPrefetched(u_int32_t addr){
-  int bit_index, char_index, rem_bits;
-  char section, selector, result;
-  bit_index = addr % (STATE_SIZE * sizeof(char));
-  char_index = bit_index/BITS_PER_CHAR; //8 bits per char
-  rem_bits = bit_index - (char_index * BITS_PER_CHAR);
-  selector = 1;
-  selector = selector << rem_bits;
-  tags[char_index] = tags[char_index] & (~selector);
-  return;
-}
-
-static
-bool bitArrayTest(){
-  //u_int32_t baseTest = 0xA08A28AC;  //prime bits marked
-  tags[0] = 0xff;
-  int i;
-  memset(tags, 0, STATE_SIZE);
-  for (i = 0; i < sizeof(u_int32_t) * 8; i+=2){
-    if(checkPrefetched(i)){
-      return false;
-    }
-    markPrefetched(i);
-  }
-  
-  for (i = 0; i < sizeof(u_int32_t) * 8; i+=3){
-    markUnPrefetched(i);
-  }
-  for(i = 0; i < sizeof(u_int32_t) * 8; i++){
-    if((i % 2) == 0 && (i % 6) != 0 ){
-      if(!checkPrefetched(i)){
-	return false;
-      }
-    }else{
-      if(checkPrefetched(i)){
-	return false;
-      }
-    }
-  }
-  //printf("Value of first 32 bits of tags %x\n", *((int *)tags));
-  return true;
-}
-      
-  
-
-Prefetcher::Prefetcher() { 
-    _ready = false; 
-    /* mark all tags as not prefetched */
-    memset(tags, 0, STATE_SIZE);
-    /*    if(bitArrayTest()){
-      printf("Bit array test passed!\n");
-      } */
-}
-
-bool Prefetcher::hasRequest(u_int32_t cycle) { return _ready; }
-
-Request Prefetcher::getRequest(u_int32_t cycle) { return _nextReq; }
-
-void Prefetcher::completeRequest(u_int32_t cycle) { 
-    if(_req_left == 0){
-    _ready = false; 
-  }else{
-    _req_left--;
-    _nextReq.addr = _nextReq.addr + L2_BLOCK_SIZE;
-    markPrefetched(_nextReq.addr);  //mark this as a prefetched block 
-  }
-}
+void Prefetcher::completeRequest(u_int32_t cycle) { _ready = false; }
 
 void Prefetcher::cpuRequest(Request req) { 
-        
-	/*if it is a hit and this was a prefetch address, 
-	  get the next one that hasn't been prefetched*/
-	if(req.HitL1 && checkPrefetched(req.addr) && !_ready){
-	       _nextReq.addr = req.addr + L2_BLOCK_SIZE;
-	       /*while(checkPrefetched(_nextReq.addr)){
-		 _nextReq.addr += L2_BLOCK_SIZE;
-		 printf("INFINITE LOOP!\n");
-		 } */
-	       markPrefetched(_nextReq.addr);  //mark this as a prefetched block 
-	       _ready = true;
-	       _req_left = NUM_REQS_PER_MISS - 1;
-	}else if(!_ready && !req.HitL1) {
-	  /* this was a pure miss, fetch the next n blocks
-	     regardless (even if prefetched, prob evicted from cache */
-	  _nextReq.addr = req.addr + L2_BLOCK_SIZE;
-	  _ready = true;
-	  _req_left = NUM_REQS_PER_MISS - 1;
-	} 
-        /* mark prefetch tag as 0 since CPU requested this */
-        markUnPrefetched(req.addr);
 
+	if(req.HitL1)
+		return;
+
+	u_int32_t miss = req.addr & (0xFFFFFFFF ^ OFFSET);
+
+	//Update Markov Table
+	//Check last address is already in the table
+	bool foundMiss = false;
+	bool foundPrediction = false;
+	for(int i = 0; i < INDICES; i++){
+		if(MissTable[i] == lastMiss){
+			foundMiss = true;
+			//Check for miss on list of predictions
+			for(int j = 0; j < PREDICTIONS; j++){
+				if(PredictionTable[i][j].addr == miss){
+					foundPrediction = true;
+					if(PredictionTable[i][j].hits < 255){
+						PredictionTable[i][j].hits++;
+					}
+				}
+			}
+			if(foundPrediction == false){ // Kick lowest prediction value off table
+				int min = PredictionTable[i][0].hits;
+				int slot = 0;
+				for(int j = 1; j < PREDICTIONS; j++){
+					if(PredictionTable[i][j].hits < min){
+						min = PredictionTable[i][j].hits;
+						slot = j;
+					}
+				}
+				PredictionTable[i][slot].hits = 1;
+				PredictionTable[i][slot].addr = miss;
+			}
+			break;
+		}
+	}
+	if(foundMiss == false){
+		//Need to shift everything down then add to top
+		for(int i = INDICES-1; i > 0; i--){
+			MissTable[i] = MissTable[i-1];
+			for(int j = 0; j < PREDICTIONS; j++){
+				PredictionTable[i][j].hits = PredictionTable[i-1][j].hits;
+				PredictionTable[i][j].addr = PredictionTable[i-1][j].addr;
+			}
+		}
+
+		for(int j = 0; j < PREDICTIONS; j++){
+			PredictionTable[0][j].hits = 0;
+			PredictionTable[0][j].addr = 0;
+		}
+		MissTable[0] = lastMiss;
+		PredictionTable[0][0].hits = 1;
+		PredictionTable[0][0].addr = miss;
+	}
+	lastMiss = miss;
+
+	//Make Predictions
+	for(int i = 0; i < INDICES; i++){
+		if(MissTable[i] == lastMiss){
+			//Add up hits
+			int totalHits = 0;
+			for(int j = 0; j < PREDICTIONS; j++){
+				totalHits += PredictionTable[i][j].hits;
+			}
+
+			//try to put predictions into prefetch queue
+			for(int j = 0; j < PREDICTIONS; j++){
+				float prob = PredictionTable[i][j].hits/totalHits;
+				float min = 1;
+				int slot = 0;
+				for(int k = 0; k < QUEUESIZE; k++){//find lowest prob value
+					if(PrefetchQueue[k].prob < min){
+						min = PrefetchQueue[k].prob;
+						slot = k;
+					}
+				}
+				if(prob > min){
+					PrefetchQueue[slot].prob = prob;
+					PrefetchQueue[slot].addr = PredictionTable[i][j].addr;
+				}
+			}
+		}
+	}
+
+	if(!_ready){
+		int max = 0;
+		int slot = 0;
+		for(int k = 0; k < QUEUESIZE; k++){//find lowest prob value
+			if(PrefetchQueue[k].prob > max){
+				max = PrefetchQueue[k].prob;
+				slot = k;
+			}
+		}
+
+		if(max > 0){
+			_nextReq.addr = PrefetchQueue[slot].addr;
+			_ready = true;
+			PrefetchQueue[slot].addr = 0;
+			PrefetchQueue[slot].prob = 0;
+		}
+	}
 
 }
+
+void Prefetcher::ResetState(int TCZone){
+
+}
+

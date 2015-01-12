@@ -17,7 +17,7 @@
 #define L2_BLOCK_SIZE 64
 #define NUM_REQS_PER_MISS 3
 #define NUM_RPT_ENTRIES 512
-#define WORTHWHILE_RPT 128
+#define WORTHWHILE_RPT 64
 /* prefetcher state data struct, one row in RPT table.
    We may want to remove PC and say "ok" to aliasing.  */
 typedef enum{

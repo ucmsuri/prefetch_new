@@ -31,6 +31,10 @@ class memQueue {
 
 //name
 	int cpu_dup_replace;
+        int duplicate_found;
+        int duplicate_found_pf;
+        int duplicate_found_pf_oldpf;
+        int duplicate_found_pf_olddem;
 	memQueue(u_int32_t capacity, Cache *c, u_int32_t latency, bool pipelined, bool write, char name);
 
 	// free up queue and readyTime arrays after we deconstruct

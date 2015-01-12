@@ -18,7 +18,7 @@
 #define STATE_SIZE 512
 #define BITS_PER_CHAR 8
 #define L2_BLOCK_SIZE 64
-#define NUM_REQS_PER_MISS 3
+#define NUM_REQS_PER_MISS 1
 
 class Prefetcher {
   private:

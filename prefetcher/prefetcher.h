@@ -8,34 +8,57 @@
 
 #ifndef PREFETCHER_H
 #define PREFETCHER_H
+#define K 2
+
+//L1 cache: Tag: 18bits,Index:1024lines/10bits, offset:16bytes/4bits
+#define L1TAGMASK  0xFFFFC000
+#define L1TAGSHIFT 14
+#define L1INDEXMASK 0x00005FF0
+#define L1INDEXSHIFT 4
+#define L1OFFSET 0x0000000F
+
+//L1 cache: Tag: 17bits,Index:1024lines/10bits, offset:32bytes/5bits
+#define L2TAGMASK 0xFFFF8000
+#define L2TAGSHIFT 15
+#define L2INDEXMASK 0x00007FE0
+#define L2INDEXSHIFT 5
+#define L2OFFSET 0x0000001F
+
+#define INDICES 512
+#define QUEUESIZE 32
+#define PREDICTIONS 16
+#define OFFSET  0x0000000F
+#define TCZSHIFT 4
+#define TCZMASK ((TCZONES-1) << TCZSHIFT)
+#define TAGMASK (0xFFFFFFFF ^ (TCZMASK | OFFSET))
+#define TAGSHIFT (4+TCZBITS)
 
 #include <sys/types.h>
 #include "mem-sim.h"
-#include <cstdlib>
-#include <cstring>
-
-
-#define STATE_SIZE 512
-#define BITS_PER_CHAR 8
-#define L2_BLOCK_SIZE 64
-#define NUM_REQS_PER_MISS 3
 
 class Prefetcher {
   private:
 	bool _ready;
 	Request _nextReq;
-	int _req_left;
-	
+    Request _lastReq;
 
+    struct Prediction{
+    	u_int32_t addr;
+    	u_int8_t hits;
+    };
+    struct Prefetch{
+    	u_int32_t addr;
+    	float prob; // Hits/totalHits
+    };
+
+    u_int32_t lastMiss;
+    struct Prediction PredictionTable[INDICES][PREDICTIONS];  	//128*4*5
+    u_int32_t MissTable[INDICES];								//128*1
+    struct Prefetch PrefetchQueue[QUEUESIZE];					//8*4
+
+    void ResetState(int TCZone);
   public:
 	Prefetcher();
-
-	/* functions for dealing with the array */
-	/*	bool checkPrefetched(u_int32_t addr);
-	void markPrefetched(u_int32_t addr);
-	void markUnPrefetched(u_int32_t addr);
-	bool bitArrayTest(void); */
-
 
 	// should return true if a request is ready for this cycle
 	bool hasRequest(u_int32_t cycle);

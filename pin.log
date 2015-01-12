@@ -1,0 +1,2 @@
+Pin 2.12 kit 53241
+A: Source/pin/vm_u/vm_signal_impl_unix.cpp:InternalHandlerAsync:InternalHandlerAsync:4051: Exceeded pending signal limit in signal emulation code
