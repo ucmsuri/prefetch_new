@@ -35,7 +35,7 @@ int main(int argc, char* argv[]) {
 
 	int lineSizeL2 = 64; 
 	int assocL2 = 8; 
-	int totalSizeL2 = 2048; 
+	int totalSizeL2 = 256; 
 
 	int numSetsL1, numSetsL2;
 
@@ -69,9 +69,9 @@ int main(int argc, char* argv[]) {
 
 	Prefetcher pf;
 
-	memQueue writeBuffer(4,&DCache,accessTimeL2,true,true,'a');
-	memQueue queueL2(4,&DCache,accessTimeL2,true,false,'b');
-	memQueue queueMem(4,&L2Cache,accessTimeMem,false,false,'c');
+	memQueue writeBuffer(2,&DCache,accessTimeL2,true,true,'a');
+	memQueue queueL2(8,&DCache,accessTimeL2,true,false,'b');
+	memQueue queueMem(8,&L2Cache,accessTimeMem,false,false,'c');
 
 
 	// statistical stuff
@@ -228,7 +228,8 @@ int main(int argc, char* argv[]) {
 			L2_hit++;			
 			if(is_pre && req.fromCPU==true){L2_pf_used++;}
 
-			if (req.fromCPU==false){L2_req_from_pref++;L2_req_from_pref_is_hit++;}
+			if ( req.fromCPU==false){L2_req_from_pref++;}
+			if (is_pre && req.fromCPU==false){L2_req_from_pref_is_hit++;}
 
 				DCache.access(req.addr,req.load,req.fromCPU); // update D cache
 				if(req.fromCPU) cpu.completeRequest(curr_cycle); // this request was from the CPU so update state to show we are done
@@ -264,7 +265,9 @@ int main(int argc, char* argv[]) {
 
 			// update both L2 and D cache
 			L2Cache.access(req.addr,req.load,req.fromCPU);
-			if(req.load) DCache.access(req.addr,req.load,req.fromCPU); // only update if this is a load
+		if(req.load) DCache.access(req.addr,req.load,req.fromCPU); // only update if this is a load
+	////MODIFIED	
+		//if(req.load && req.fromCPU==true) DCache.access(req.addr,req.load,req.fromCPU); // only update if this is a load
 
 			if(req.fromCPU && req.load) cpu.completeRequest(curr_cycle);
 		}
@@ -350,7 +353,9 @@ int main(int argc, char* argv[]) {
 	printf("L2_REQ_L2Q_PF_MISS   %ld \n",L2_req_from_pref_is_miss);
 //	printf("Total CPU request %d\n",pf.cpu_req);
 	printf("PF_REQ_REPLACE_BY_CPU_L2Q %ld\n",queueL2.cpu_dup_replace);
+	printf("PF_REQ_REPLACE_BY_CPU_MEM %ld\n",queueMem.cpu_dup_replace);
 	printf("DUPLICATE_L2Q %ld\n",queueL2.duplicate_found);
+	printf("DUPLICATE_MEMQ %ld\n",queueMem.duplicate_found);
 	printf("DUPLICATE_L2Q_PF %ld\n",queueL2.duplicate_found_pf);
 	printf("DUPLICATE_L2Q_PF_OLDPF %ld\n",queueL2.duplicate_found_pf_oldpf);
 	printf("DUPLICATE_L2Q_PF_OLDDEM %ld\n",queueL2.duplicate_found_pf_olddem);
@@ -363,6 +368,9 @@ int main(int argc, char* argv[]) {
 	printf("MEM_REQ_MEMQ    %d\n",mem_req_from_L2);
         printf("L2_WRITE_HIT    %d\n",L2_write_hit);
 	printf("PREFETCH_ACCURACY	 %f\n",float(L1_pf_used)/L2_req_from_pref);
+	printf("PREFETCH_COVERAGE	 %f\n",float(L1_pf_used)/(L1_miss+L1_pf_used));
+	printf("PREFETCH_BW	 %f\n",memBW);
+	printf("IPC 		 %f\n",float(cpu.Total_inst())/curr_cycle);
 	printf("PREFETCH_ACCURACY_2	 %f\n",float(L1_pf_used)/total_L2_req);
 	return 0;
 }

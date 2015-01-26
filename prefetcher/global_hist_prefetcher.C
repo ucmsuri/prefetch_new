@@ -169,7 +169,7 @@ int Prefetcher::locateCandidate(int delta){
 */
 bool Prefetcher::hasRequest(u_int32_t cycle){
   _depth++;
-  if (_depth > 16)
+  if (_depth > NUM_REQS_PER_MISS)
     _ready = false;
   else
     _ready = true;
@@ -190,10 +190,10 @@ Request Prefetcher::getRequest(u_int32_t cycle){
       next_delta = _next_delta;
       break;
     case 2:
-      next_delta = _next_delta - 32;
+      next_delta = _next_delta - 63;
       break;
     default:
-      next_delta = _next_delta + 32;
+      next_delta = _next_delta + 63;
   }
 
   _nextReq.addr = _prev_addr + next_delta;

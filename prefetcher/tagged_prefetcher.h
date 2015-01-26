@@ -15,9 +15,9 @@
 #include <cstring>
 
 
-#define STATE_SIZE 512
+#define STATE_SIZE 4096
 #define BITS_PER_CHAR 8
-#define L2_BLOCK_SIZE 64
+#define L2_BLOCK_SIZE 63
 #define NUM_REQS_PER_MISS 1
 
 class Prefetcher {

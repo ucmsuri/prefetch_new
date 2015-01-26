@@ -3,6 +3,7 @@
 #include "cache.h"
 #include <stdlib.h>
 #include <stdio.h>
+#include <iostream> 
 
 void memQueue::printQueue() {
 	int i = _front;
@@ -75,6 +76,7 @@ bool memQueue::add(Request req, u_int32_t cycle) {
 		if (dupLoc) {
 			duplicate_found++;
                         if(req.fromCPU==false) {
+			//	std::cout << "tag : " << tag << " index : " << index << std::endl;
 				duplicate_found_pf++;
                         	if(_queue[dupLoc].fromCPU==false) 
 					duplicate_found_pf_oldpf++;

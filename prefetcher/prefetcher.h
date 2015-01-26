@@ -23,6 +23,9 @@
 #define L2INDEXMASK 0x00007FE0
 #define L2INDEXSHIFT 5
 #define L2OFFSET 0x0000001F
+//mine
+#define L2_BLOCK_SIZE 63
+#define NUM_REQS_PER_MISS 1
 
 #define INDICES 512
 #define QUEUESIZE 32
@@ -39,6 +42,8 @@
 class Prefetcher {
   private:
 	bool _ready;
+//mine
+  int _req_left;
 	Request _nextReq;
     Request _lastReq;
 
@@ -77,3 +82,4 @@ class Prefetcher {
 };
 
 #endif
+

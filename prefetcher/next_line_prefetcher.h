@@ -12,10 +12,13 @@
 #include <sys/types.h>
 #include "mem-sim.h"
 
+#define L2_BLOCK_SIZE 64
+#define NUM_REQS_PER_MISS 1
 class Prefetcher {
   private:
 	bool _ready;
 	Request _nextReq;
+	int _req_left;
   public:
 	Prefetcher();
 

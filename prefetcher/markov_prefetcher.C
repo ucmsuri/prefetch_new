@@ -35,8 +35,14 @@ Request Prefetcher::getRequest(u_int32_t cycle) {
     return _nextReq; 
 }
 
-void Prefetcher::completeRequest(u_int32_t cycle) { _ready = false; }
-
+void Prefetcher::completeRequest(u_int32_t cycle) {// _ready = false; 
+    if(_req_left == 0){
+    _ready = false; 
+  }else{
+    _req_left--;
+    _nextReq.addr = _nextReq.addr + L2_BLOCK_SIZE;
+}
+}
 void Prefetcher::cpuRequest(Request req) { 
 
 	if(req.HitL1)
@@ -136,6 +142,8 @@ void Prefetcher::cpuRequest(Request req) {
 		if(max > 0){
 			_nextReq.addr = PrefetchQueue[slot].addr;
 			_ready = true;
+	//mine
+		  _req_left = NUM_REQS_PER_MISS - 1;
 			PrefetchQueue[slot].addr = 0;
 			PrefetchQueue[slot].prob = 0;
 		}
