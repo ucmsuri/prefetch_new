@@ -1,0 +1,354 @@
+BITS_PER_CHAR	prefetcher.h	19
+BITS_PER_CHAR	tagged_prefetcher.h	19
+CACHE_H	cache.h	2
+CC	Makefile	/^CC = g++$/
+CCFLAGS	Makefile	/^CCFLAGS = -g -std=c++0x$/
+CPU	CPU.h	8
+CPU.o	Makefile	/^CPU.o: CPU.C CPU.h mem-sim.h$/
+CPU::CPU	CPU.C	/^CPU::CPU(char* trace_file) {$/
+CPU::Total_access_time	CPU.C	/^int CPU::Total_access_time() { return totalAccessT/
+CPU::Total_inst	CPU.C	/^int CPU::Total_inst() { return total_inst;}$/
+CPU::_currReq	CPU.h	12
+CPU::_done	CPU.h	18
+CPU::_readyAt	CPU.h	16
+CPU::_state	CPU.h	14
+CPU::_trace	CPU.h	10
+CPU::completeRequest	CPU.C	/^void CPU::completeRequest(u_int32_t cycle) {$/
+CPU::getAMAT	CPU.C	/^double CPU::getAMAT() { return (double)totalAccess/
+CPU::getHitRateL1	CPU.C	/^double CPU::getHitRateL1() { return (double)hitsL1/
+CPU::getHitRateL2	CPU.C	/^double CPU::getHitRateL2() { $/
+CPU::getNrequest	CPU.C	/^int CPU::getNrequest() {return nRequests;}$/
+CPU::getRequest	CPU.C	/^Request CPU::getRequest() { return _currReq; }$/
+CPU::getStatus	CPU.C	/^cpuState CPU::getStatus(u_int32_t cycle) { $/
+CPU::hitL1	CPU.C	/^void CPU::hitL1(bool isHit) { _currReq.HitL1 = isH/
+CPU::hitsL1	CPU.h	21
+CPU::hitsL2	CPU.h	22
+CPU::isDone	CPU.C	/^bool CPU::isDone() { return _done; }$/
+CPU::issueRequest	CPU.C	/^Request CPU::issueRequest(u_int32_t cycle) { $/
+CPU::loadHitL2	CPU.C	/^void CPU::loadHitL2(bool isHit) { _currReq.HitL2 =/
+CPU::nRequests	CPU.h	20
+CPU::readNextRequest	CPU.C	/^void CPU::readNextRequest(u_int32_t cycle) {$/
+CPU::setStatus	CPU.C	/^void CPU::setStatus(cpuState new_state) { _state =/
+CPU::storeHitL2	CPU.C	/^void CPU::storeHitL2(bool isHit) { if(isHit) hitsL/
+CPU::totalAccessTime	CPU.h	23
+CPU::total_inst	CPU.h	24
+CPU::~CPU	CPU.C	/^CPU::~CPU() { fclose(_trace); }$/
+CPU_H	CPU.h	2
+Cache	cache.h	6
+Cache::Cache	cache.C	/^Cache::Cache(u_int32_t numSets, u_int32_t assoc, u/
+Cache::_assoc	cache.h	19
+Cache::_blockSize	cache.h	18
+Cache::_numSets	cache.h	20
+Cache::_randReplacement	cache.h	21
+Cache::_writeAlloc	cache.h	22
+Cache::_writeThrough	cache.h	23
+Cache::access	cache.C	/^bool Cache::access(u_int32_t addr, bool load, bool/
+Cache::check	cache.C	/^bool Cache::check(u_int32_t addr, bool load) {$/
+Cache::dirty	cache.h	12
+Cache::getIndex	cache.C	/^u_int32_t Cache::getIndex(u_int32_t addr) {$/
+Cache::getTag	cache.C	/^u_int32_t Cache::getTag(u_int32_t addr) {$/
+Cache::is_prefetch	cache.C	/^bool Cache::is_prefetch(u_int32_t addr) {$/
+Cache::lru	cache.h	13
+Cache::pref_bit	cache.h	15
+Cache::reset	cache.C	/^void Cache::reset() {$/
+Cache::tags	cache.h	10
+Cache::valid	cache.h	11
+Cache::~Cache	cache.C	/^Cache::~Cache() {$/
+DEBUG	global_hist_prefetcher.C	4
+ELF	no_prefetch	1
+HitL1	mem-sim.h	21
+HitL2	mem-sim.h	22
+H‰H‹JH‰	cacheSim	18
+H‰H‹JH‰	ght_1	20
+H‰H‹JH‰	global_hist_prefetcher	18
+H‰H‹JH‰	markov_prefetcher	21
+H‰H‹JH‰	memQueue.o	2
+H‰H‹JH‰	next_line_prefetcher	17
+H‰H‹JH‰	no_prefetch	19
+H‰H‹JH‰	rpt	19
+H‰H‹JH‰	tagged_prefetcher	18
+H‰H‹JH‰	tagged_prefetcher___	18
+H‰ÇèàöÿÿH‰	cacheSim	6
+H‰ÇèàöÿÿH‰	ght_1	7
+H‰ÇèàöÿÿH‰	global_hist_prefetcher	6
+H‰ÇèàöÿÿH‰	markov_prefetcher	7
+H‰ÇèàöÿÿH‰	no_prefetch	7
+H‰ÇèàöÿÿH‰	rpt	6
+H‰ÇèàöÿÿH‰	tagged_prefetcher	6
+H‰ÇèàöÿÿH‰	tagged_prefetcher___	6
+H‹	markov_prefetcher	21
+H‹EØ	CPU.o	2
+IDLE	mem-sim.h	7
+INDICES	markov_prefetcher.h	27
+INIT	rpt.h	24
+K	cacheSim	113
+K	markov_prefetcher.h	11
+K	tagged_prefetcher	113
+K	tagged_prefetcher___	113
+L1INDEXMASK	markov_prefetcher.h	16
+L1INDEXSHIFT	markov_prefetcher.h	17
+L1OFFSET	markov_prefetcher.h	18
+L1TAGMASK	markov_prefetcher.h	14
+L1TAGSHIFT	markov_prefetcher.h	15
+L1_CACHE_BLOCK	ght_1.h	9
+L1_PREFETCH_DEGREE	ght_1.h	7
+L2INDEXMASK	markov_prefetcher.h	23
+L2INDEXSHIFT	markov_prefetcher.h	24
+L2OFFSET	markov_prefetcher.h	25
+L2TAGMASK	markov_prefetcher.h	21
+L2TAGSHIFT	markov_prefetcher.h	22
+L2_BLOCK_SIZE	prefetcher.h	20
+L2_BLOCK_SIZE	rpt.h	17
+L2_BLOCK_SIZE	tagged_prefetcher.h	20
+L2_CACHE_BLOCK	ght_1.h	10
+L2_PREFETCH_DEGREE	ght_1.h	8
+MAX	ght_1.h	/^#define MAX(x, y) (((x) > (y)) ? (x) : (y))$/
+MAX_CAPACITY	global_hist_prefetcher.h	9
+MAX_CAPACITY	markov_prefetcher_1.h	18
+MAX_REQUEST_COUNT	ght_1.h	5
+MAX_STATE_COUNT	ght_1.h	4
+MEMQUEUE_H	memQueue.h	2
+MEM_SIM_H	mem-sim.h	2
+MIN	ght_1.h	/^#define MIN(x, y) (((x) < (y)) ? (x) : (y))$/
+Mmain	main.C	/^int main(int argc, char* argv[]) {$/
+NULL_STATE	ght_1.h	6
+NUM_REQS_PER_MISS	prefetcher.h	21
+NUM_REQS_PER_MISS	rpt.h	18
+NUM_REQS_PER_MISS	tagged_prefetcher.h	21
+NUM_RPT_ENTRIES	rpt.h	19
+OFFSET	markov_prefetcher.h	30
+PREDICTIONS	markov_prefetcher.h	29
+PREFETCHER_H	ght_1.h	2
+PREFETCHER_H	global_hist_prefetcher.h	2
+PREFETCHER_H	markov_prefetcher.h	10
+PREFETCHER_H	markov_prefetcher_1.h	11
+PREFETCHER_H	next_line_prefetcher.h	10
+PREFETCHER_H	no_prefetch.h	10
+PREFETCHER_H	prefetcher.h	10
+PREFETCHER_H	rpt.h	10
+PREFETCHER_H	tagged_prefetcher.h	10
+Prefetcher	ght_1.h	29
+Prefetcher	global_hist_prefetcher.h	28
+Prefetcher	markov_prefetcher.h	39
+Prefetcher	markov_prefetcher_1.h	26
+Prefetcher	next_line_prefetcher.h	15
+Prefetcher	no_prefetch.h	15
+Prefetcher	prefetcher.h	23
+Prefetcher	rpt.h	36
+Prefetcher	tagged_prefetcher.h	23
+Prefetcher::MissTable	markov_prefetcher.h	56
+Prefetcher::Prediction	markov_prefetcher.h	45
+Prefetcher::Prediction::addr	markov_prefetcher.h	46
+Prefetcher::Prediction::hits	markov_prefetcher.h	47
+Prefetcher::PredictionTable	markov_prefetcher.h	55
+Prefetcher::Prefetch	markov_prefetcher.h	49
+Prefetcher::Prefetch::addr	markov_prefetcher.h	50
+Prefetcher::Prefetch::prob	markov_prefetcher.h	51
+Prefetcher::PrefetchQueue	markov_prefetcher.h	57
+Prefetcher::Prefetcher	ght_1.C	/^Prefetcher::Prefetcher() {$/
+Prefetcher::Prefetcher	global_hist_prefetcher.C	/^Prefetcher::Prefetcher() {$/
+Prefetcher::Prefetcher	markov_prefetcher.C	/^Prefetcher::Prefetcher() {$/
+Prefetcher::Prefetcher	markov_prefetcher_1.C	/^Prefetcher::Prefetcher() {$/
+Prefetcher::Prefetcher	next_line_prefetcher.C	/^Prefetcher::Prefetcher() { _ready = false;}\/\/pref_/
+Prefetcher::Prefetcher	no_prefetch.C	/^Prefetcher::Prefetcher() { _ready = false;}\/\/pref_/
+Prefetcher::Prefetcher	prefetcher.C	/^Prefetcher::Prefetcher() { $/
+Prefetcher::Prefetcher	rpt.C	/^Prefetcher::Prefetcher() { $/
+Prefetcher::Prefetcher	tagged_prefetcher.C	/^Prefetcher::Prefetcher() { $/
+Prefetcher::ResetState	markov_prefetcher.C	/^void Prefetcher::ResetState(int TCZone){$/
+Prefetcher::_count	markov_prefetcher_1.h	36
+Prefetcher::_depth	global_hist_prefetcher.h	42
+Prefetcher::_end_of_queue	global_hist_prefetcher.h	39
+Prefetcher::_enqueue	markov_prefetcher_1.h	33
+Prefetcher::_ghb_table	global_hist_prefetcher.h	37
+Prefetcher::_items	markov_prefetcher_1.h	32
+Prefetcher::_lastReq	markov_prefetcher.h	43
+Prefetcher::_nextReq	global_hist_prefetcher.h	31
+Prefetcher::_nextReq	markov_prefetcher.h	42
+Prefetcher::_nextReq	markov_prefetcher_1.h	29
+Prefetcher::_nextReq	next_line_prefetcher.h	18
+Prefetcher::_nextReq	no_prefetch.h	18
+Prefetcher::_nextReq	prefetcher.h	26
+Prefetcher::_nextReq	rpt.h	39
+Prefetcher::_nextReq	tagged_prefetcher.h	26
+Prefetcher::_next_delta	global_hist_prefetcher.h	41
+Prefetcher::_next_diff	markov_prefetcher_1.h	35
+Prefetcher::_prev_addr	global_hist_prefetcher.h	40
+Prefetcher::_prev_addr	markov_prefetcher_1.h	34
+Prefetcher::_queue_full	global_hist_prefetcher.h	38
+Prefetcher::_ready	global_hist_prefetcher.h	30
+Prefetcher::_ready	markov_prefetcher.h	41
+Prefetcher::_ready	markov_prefetcher_1.h	28
+Prefetcher::_ready	next_line_prefetcher.h	17
+Prefetcher::_ready	no_prefetch.h	17
+Prefetcher::_ready	prefetcher.h	25
+Prefetcher::_ready	rpt.h	38
+Prefetcher::_ready	tagged_prefetcher.h	25
+Prefetcher::_req_left	prefetcher.h	27
+Prefetcher::_req_left	rpt.h	40
+Prefetcher::_req_left	tagged_prefetcher.h	27
+Prefetcher::completeRequest	ght_1.C	/^void Prefetcher::completeRequest(u_int32_t cycle) /
+Prefetcher::completeRequest	global_hist_prefetcher.C	/^void Prefetcher::completeRequest(u_int32_t cycle){/
+Prefetcher::completeRequest	markov_prefetcher.C	/^void Prefetcher::completeRequest(u_int32_t cycle) /
+Prefetcher::completeRequest	markov_prefetcher_1.C	/^void Prefetcher::completeRequest(u_int32_t cycle)$/
+Prefetcher::completeRequest	next_line_prefetcher.C	/^void Prefetcher::completeRequest(u_int32_t cycle) /
+Prefetcher::completeRequest	no_prefetch.C	/^void Prefetcher::completeRequest(u_int32_t cycle) /
+Prefetcher::completeRequest	prefetcher.C	/^void Prefetcher::completeRequest(u_int32_t cycle) /
+Prefetcher::completeRequest	rpt.C	/^void Prefetcher::completeRequest(u_int32_t cycle) /
+Prefetcher::completeRequest	tagged_prefetcher.C	/^void Prefetcher::completeRequest(u_int32_t cycle) /
+Prefetcher::cpuRequest	ght_1.C	/^void Prefetcher::cpuRequest(Request req) {$/
+Prefetcher::cpuRequest	global_hist_prefetcher.C	/^void Prefetcher::cpuRequest(Request req){$/
+Prefetcher::cpuRequest	markov_prefetcher.C	/^void Prefetcher::cpuRequest(Request req) { $/
+Prefetcher::cpuRequest	markov_prefetcher_1.C	/^void Prefetcher::cpuRequest(Request req)$/
+Prefetcher::cpuRequest	next_line_prefetcher.C	/^void Prefetcher::cpuRequest(Request req) { $/
+Prefetcher::cpuRequest	no_prefetch.C	/^void Prefetcher::cpuRequest(Request req) { $/
+Prefetcher::cpuRequest	prefetcher.C	/^void Prefetcher::cpuRequest(Request req) { $/
+Prefetcher::cpuRequest	rpt.C	/^void Prefetcher::cpuRequest(Request req) { $/
+Prefetcher::cpuRequest	tagged_prefetcher.C	/^void Prefetcher::cpuRequest(Request req) { $/
+Prefetcher::cpu_req	next_line_prefetcher.h	23
+Prefetcher::cpu_req	no_prefetch.h	23
+Prefetcher::deLocalRequest	ght_1.C	/^u_int32_t Prefetcher::deLocalRequest() {$/
+Prefetcher::enLocalRequest	ght_1.C	/^bool Prefetcher::enLocalRequest(u_int32_t addr) {$/
+Prefetcher::find_next_req	markov_prefetcher_1.C	/^int Prefetcher::find_next_req(int diff)$/
+Prefetcher::find_prev	markov_prefetcher_1.C	/^int Prefetcher::find_prev(int diff)$/
+Prefetcher::frontRequest	ght_1.h	37
+Prefetcher::getFrontLocalRequest	ght_1.C	/^u_int32_t Prefetcher::getFrontLocalRequest() {$/
+Prefetcher::getRequest	ght_1.C	/^Request Prefetcher::getRequest(u_int32_t cycle) {$/
+Prefetcher::getRequest	global_hist_prefetcher.C	/^Request Prefetcher::getRequest(u_int32_t cycle){$/
+Prefetcher::getRequest	markov_prefetcher.C	/^Request Prefetcher::getRequest(u_int32_t cycle) { /
+Prefetcher::getRequest	markov_prefetcher_1.C	/^Request Prefetcher::getRequest(u_int32_t cycle)$/
+Prefetcher::getRequest	next_line_prefetcher.C	/^Request Prefetcher::getRequest(u_int32_t cycle) { /
+Prefetcher::getRequest	no_prefetch.C	/^Request Prefetcher::getRequest(u_int32_t cycle) { /
+Prefetcher::getRequest	prefetcher.C	/^Request Prefetcher::getRequest(u_int32_t cycle) { /
+Prefetcher::getRequest	rpt.C	/^Request Prefetcher::getRequest(u_int32_t cycle) { /
+Prefetcher::getRequest	tagged_prefetcher.C	/^Request Prefetcher::getRequest(u_int32_t cycle) { /
+Prefetcher::getSecondLRUState	ght_1.C	/^u_int16_t Prefetcher::getSecondLRUState() {$/
+Prefetcher::hasRequest	ght_1.C	/^bool Prefetcher::hasRequest(u_int32_t cycle) {$/
+Prefetcher::hasRequest	global_hist_prefetcher.C	/^bool Prefetcher::hasRequest(u_int32_t cycle){$/
+Prefetcher::hasRequest	markov_prefetcher.C	/^bool Prefetcher::hasRequest(u_int32_t cycle) { ret/
+Prefetcher::hasRequest	markov_prefetcher_1.C	/^bool Prefetcher::hasRequest(u_int32_t cycle)$/
+Prefetcher::hasRequest	next_line_prefetcher.C	/^bool Prefetcher::hasRequest(u_int32_t cycle) { $/
+Prefetcher::hasRequest	no_prefetch.C	/^bool Prefetcher::hasRequest(u_int32_t cycle) { $/
+Prefetcher::hasRequest	prefetcher.C	/^bool Prefetcher::hasRequest(u_int32_t cycle) { ret/
+Prefetcher::hasRequest	rpt.C	/^bool Prefetcher::hasRequest(u_int32_t cycle) { ret/
+Prefetcher::hasRequest	tagged_prefetcher.C	/^bool Prefetcher::hasRequest(u_int32_t cycle) { ret/
+Prefetcher::historyState	ght_1.h	34
+Prefetcher::ifAlreadyInQueue	ght_1.C	/^bool Prefetcher::ifAlreadyInQueue(u_int32_t addr) /
+Prefetcher::ifEmptyHistoryState	ght_1.C	/^bool Prefetcher::ifEmptyHistoryState() {$/
+Prefetcher::ifEmptyLocalRequest	ght_1.C	/^bool Prefetcher::ifEmptyLocalRequest() {$/
+Prefetcher::ifFullHistoryState	ght_1.C	/^bool Prefetcher::ifFullHistoryState() {$/
+Prefetcher::ifFullLocalRequest	ght_1.C	/^bool Prefetcher::ifFullLocalRequest() {$/
+Prefetcher::initHistoryState	ght_1.C	/^void Prefetcher::initHistoryState() {$/
+Prefetcher::initLocalRequest	ght_1.C	/^void Prefetcher::initLocalRequest() {$/
+Prefetcher::insertHistoryState	ght_1.C	/^void Prefetcher::insertHistoryState(u_int32_t pc, /
+Prefetcher::lastMiss	markov_prefetcher.h	54
+Prefetcher::localRequest	ght_1.h	39
+Prefetcher::locateCandidate	global_hist_prefetcher.C	/^int Prefetcher::locateCandidate(int delta){$/
+Prefetcher::locatePrevEntry	global_hist_prefetcher.C	/^int Prefetcher::locatePrevEntry(int delta){$/
+Prefetcher::pref_req	next_line_prefetcher.h	22
+Prefetcher::pref_req	no_prefetch.h	22
+Prefetcher::pref_used	next_line_prefetcher.h	24
+Prefetcher::pref_used	no_prefetch.h	24
+Prefetcher::queryHistoryState	ght_1.C	/^u_int16_t Prefetcher::queryHistoryState(u_int32_t /
+Prefetcher::rearRequest	ght_1.h	38
+Prefetcher::stateCount	ght_1.h	32
+Prefetcher::stateHead	ght_1.h	33
+Prefetcher::update_enq	markov_prefetcher_1.C	/^void Prefetcher::update_enq(void)$/
+Prefetcher::~Prefetcher	global_hist_prefetcher.C	/^Prefetcher::~Prefetcher() {$/
+Prefetcher::~Prefetcher	markov_prefetcher_1.C	/^Prefetcher::~Prefetcher() {$/
+QUEUESIZE	markov_prefetcher.h	28
+READY	mem-sim.h	8
+Request	mem-sim.h	14
+STALLED_L2	mem-sim.h	10
+STALLED_WB	mem-sim.h	11
+STATE_SIZE	prefetcher.h	18
+STATE_SIZE	tagged_prefetcher.h	18
+STEADY	rpt.h	26
+State	ght_1.h	20
+TAGMASK	markov_prefetcher.h	33
+TAGSHIFT	markov_prefetcher.h	34
+TCZMASK	markov_prefetcher.h	32
+TCZSHIFT	markov_prefetcher.h	31
+TRANSITION	rpt.h	25
+UìHcÒHÁ	cacheSim	6
+UìHcÒHÁ	ght_1	7
+UìHcÒHÁ	global_hist_prefetcher	6
+UìHcÒHÁ	markov_prefetcher	7
+UìHcÒHÁ	no_prefetch	7
+UìHcÒHÁ	rpt	6
+UìHcÒHÁ	tagged_prefetcher	6
+UìHcÒHÁ	tagged_prefetcher___	6
+WAITING	mem-sim.h	9
+WORTHWHILE_RPT	rpt.h	20
+addr	ght_1.h	22
+addr	mem-sim.h	15
+ahead	ght_1.h	25
+bitArrayTest	prefetcher.C	/^bool bitArrayTest(){$/
+bitArrayTest	tagged_prefetcher.C	/^bool bitArrayTest(){$/
+cache.o	Makefile	/^cache.o: cache.C cache.h$/
+cacheSim	Makefile	/^cacheSim: CPU.o cache.o main.o memQueue.o prefetch/
+candidate	global_hist_prefetcher.h	22
+checkPrefetched	prefetcher.C	/^bool checkPrefetched(u_int32_t addr){$/
+checkPrefetched	tagged_prefetcher.C	/^bool checkPrefetched(u_int32_t addr){$/
+clean	Makefile	/^clean:$/
+count	ght_1.h	23
+count	global_hist_prefetcher.h	25
+counter	rpt.C	14
+cpuState	mem-sim.h	6
+delta	global_hist_prefetcher.h	18
+delta	global_hist_prefetcher.h	24
+diff	markov_prefetcher_1.h	22
+findMax	global_hist_prefetcher.C	/^int findMax(struct candidate candidates[], int end/
+fromCPU	mem-sim.h	18
+initGHB	global_hist_prefetcher.C	/^void initGHB(struct item *ghbTable){$/
+issuedAt	mem-sim.h	20
+item	global_hist_prefetcher.h	16
+item	markov_prefetcher_1.h	20
+last_mem	rpt.h	31
+last_stride	rpt.h	32
+load	mem-sim.h	17
+main.o	Makefile	/^main.o: main.C mem-sim.h CPU.h cache.h memQueue.h /
+markPrefetched	prefetcher.C	/^void markPrefetched(u_int32_t addr){$/
+markPrefetched	tagged_prefetcher.C	/^void markPrefetched(u_int32_t addr){$/
+markUnPrefetched	prefetcher.C	/^void markUnPrefetched(u_int32_t addr){$/
+markUnPrefetched	tagged_prefetcher.C	/^void markUnPrefetched(u_int32_t addr){$/
+memQueue	memQueue.h	10
+memQueue.o	Makefile	/^memQueue.o: memQueue.C memQueue.h mem-sim.h cache./
+memQueue::_capacity	memQueue.h	13
+memQueue::_front	memQueue.h	19
+memQueue::_id	memQueue.h	12
+memQueue::_indexes	memQueue.h	26
+memQueue::_latency	memQueue.h	14
+memQueue::_pipelined	memQueue.h	16
+memQueue::_queue	memQueue.h	23
+memQueue::_readyTime	memQueue.h	24
+memQueue::_rear	memQueue.h	20
+memQueue::_size	memQueue.h	21
+memQueue::_source	memQueue.h	17
+memQueue::_tags	memQueue.h	25
+memQueue::_write	memQueue.h	15
+memQueue::add	memQueue.C	/^bool memQueue::add(Request req, u_int32_t cycle) {/
+memQueue::cpu_dup_replace	memQueue.h	33
+memQueue::findDup	memQueue.C	/^int memQueue::findDup(u_int32_t tag, u_int32_t ind/
+memQueue::frontReady	memQueue.C	/^bool memQueue::frontReady(u_int32_t cycle) { $/
+memQueue::getFront	memQueue.C	/^Request memQueue::getFront() { return _queue[_fron/
+memQueue::getSize	memQueue.C	/^u_int32_t memQueue::getSize() { return _size; }$/
+memQueue::memQueue	memQueue.C	/^memQueue::memQueue(u_int32_t capacity, Cache *c, u/
+memQueue::printQueue	memQueue.C	/^void memQueue::printQueue() {$/
+memQueue::remove	memQueue.C	/^bool memQueue::remove() {$/
+memQueue::~memQueue	memQueue.C	/^memQueue::~memQueue() { $/
+next	ght_1.h	26
+offset	ght_1.h	24
+pc	ght_1.h	21
+pc	mem-sim.h	16
+pc	rpt.h	30
+prefetcher.o	Makefile	/^prefetcher.o: prefetcher.C prefetcher.h mem-sim.h$/
+prev	global_hist_prefetcher.h	19
+prev	markov_prefetcher_1.h	23
+rpt_row_entry	rpt.h	29
+rpt_row_entry_t	rpt.h	34
+rpt_table	rpt.C	15
+state	rpt.h	33
+state_t	rpt.h	27
+tags	prefetcher.C	19
+tags	tagged_prefetcher.C	19
+w	prefetcher.o	6
